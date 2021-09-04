@@ -1,0 +1,13 @@
+(define (test predicate1 predicate2 predicate3)
+    (cond ((predicate1) 
+            (display "Predicate 1 executed!")
+            (display #\newline))
+          ((predicate2) 
+            (display "Predicate 2 executed!")
+            (display #\newline))
+          ((predicate3)  
+            (display "Predicate 3 executed!")
+            (display #\newline))
+         (else
+            (display "Else executed!")
+            (display #\newline))))
