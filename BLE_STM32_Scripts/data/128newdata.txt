@@ -1,0 +1,587 @@
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.424     0.885      0.172    (g)
+omeg[XYZ]:    0.0        0.1        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.425     0.885      0.172    (g)
+omeg[XYZ]:    0.4        0.2        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.425     0.885      0.170    (g)
+omeg[XYZ]:    0.1        -0.1       -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.424     0.884      0.173    (g)
+omeg[XYZ]:    -0.1       0.0        0.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.426     0.885      0.174    (g)
+omeg[XYZ]:    0.0        0.1        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.426     0.882      0.173    (g)
+omeg[XYZ]:    -0.2       -0.1       -0.4     (бу/s)
+CHECK BLE STATE! 
+ADval = 129,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.425     0.881      0.173    (g)
+omeg[XYZ]:    -0.1       0.1        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.428     0.885      0.172    (g)
+omeg[XYZ]:    -0.1       0.3        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.426     0.884      0.171    (g)
+omeg[XYZ]:    -0.1       0.1        0.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.426     0.885      0.171    (g)
+omeg[XYZ]:    0.1        -0.2       0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 128,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.427     0.887      0.172    (g)
+omeg[XYZ]:    -0.1       0.0        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 129,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.425     0.885      0.172    (g)
+omeg[XYZ]:    0.2        0.2        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.423     0.885      0.172    (g)
+omeg[XYZ]:    0.2        0.2        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.427     0.885      0.173    (g)
+omeg[XYZ]:    0.1        0.3        -0.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.426     0.883      0.169    (g)
+omeg[XYZ]:    -0.1       0.3        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.422     0.884      0.172    (g)
+omeg[XYZ]:    -0.2       0.3        1.7      (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.426     0.885      0.177    (g)
+omeg[XYZ]:    -1.3       -0.3       0.7      (бу/s)
+CHECK BLE STATE! 
+ADval = 128,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.421     0.884      0.168    (g)
+omeg[XYZ]:    0.0        0.2        -0.5     (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.422     0.884      0.172    (g)
+omeg[XYZ]:    0.0        0.3        0.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.429     0.890      0.172    (g)
+omeg[XYZ]:    0.5        -0.1       0.7      (бу/s)
+CHECK BLE STATE! 
+ADval = 128,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.424     0.886      0.170    (g)
+omeg[XYZ]:    -0.1       0.5        0.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.421     0.895      0.155    (g)
+omeg[XYZ]:    1.6        1.3        -1.8     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.438     0.880      0.178    (g)
+omeg[XYZ]:    -0.1       -0.2       3.8      (бу/s)
+CHECK BLE STATE! 
+ADval = 130,vol = 104 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.440     0.893      0.176    (g)
+omeg[XYZ]:    1.0        -0.2       0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 132,vol = 106 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.447     0.884      0.161    (g)
+omeg[XYZ]:    -0.8       0.7        0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 134,vol = 107 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.422     0.875      0.167    (g)
+omeg[XYZ]:    -1.3       1.1        2.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 140,vol = 112 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.882      0.170    (g)
+omeg[XYZ]:    -0.5       0.5        1.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 143,vol = 115 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.883      0.173    (g)
+omeg[XYZ]:    -0.4       -0.3       -0.5     (бу/s)
+CHECK BLE STATE! 
+ADval = 148,vol = 119 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.421     0.883      0.174    (g)
+omeg[XYZ]:    -0.1       -0.1       -0.3     (бу/s)
+CHECK BLE STATE! 
+ADval = 152,vol = 122 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.883      0.172    (g)
+omeg[XYZ]:    0.1        0.4        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 159,vol = 128 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.882      0.173    (g)
+omeg[XYZ]:    0.5        0.7        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 164,vol = 132 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.885      0.171    (g)
+omeg[XYZ]:    0.1        0.7        -0.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 165,vol = 132 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.424     0.888      0.172    (g)
+omeg[XYZ]:    0.1        0.3        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 166,vol = 133 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.422     0.884      0.171    (g)
+omeg[XYZ]:    0.1        0.1        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 163,vol = 131 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.886      0.170    (g)
+omeg[XYZ]:    -0.2       0.6        0.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 167,vol = 134 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.422     0.887      0.173    (g)
+omeg[XYZ]:    0.1        -0.1       0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 175,vol = 141 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.426     0.884      0.173    (g)
+omeg[XYZ]:    0.1        0.0        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 182,vol = 146 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.883      0.172    (g)
+omeg[XYZ]:    0.0        0.0        -0.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 184,vol = 148 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.423     0.884      0.173    (g)
+omeg[XYZ]:    -0.1       0.3        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 187,vol = 150 mv,press = 500 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.423     0.883      0.173    (g)
+omeg[XYZ]:    -0.1       -0.1       -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 198,vol = 159 mv,press = 555 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.887      0.172    (g)
+omeg[XYZ]:    -0.1       0.2        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 197,vol = 158 mv,press = 549 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.424     0.885      0.173    (g)
+omeg[XYZ]:    -0.2       0.1        -0.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 196,vol = 157 mv,press = 543 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.424     0.883      0.172    (g)
+omeg[XYZ]:    0.1        0.2        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 204,vol = 164 mv,press = 586 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.424     0.885      0.169    (g)
+omeg[XYZ]:    0.1        0.1        0.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 213,vol = 171 mv,press = 630 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.424     0.884      0.171    (g)
+omeg[XYZ]:    -0.1       0.2        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 224,vol = 180 mv,press = 685 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.422     0.883      0.170    (g)
+omeg[XYZ]:    0.2        0.1        -0.4     (бу/s)
+CHECK BLE STATE! 
+ADval = 232,vol = 186 mv,press = 722 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.884      0.172    (g)
+omeg[XYZ]:    -0.1       0.1        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 243,vol = 195 mv,press = 778 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.423     0.885      0.170    (g)
+omeg[XYZ]:    -0.2       0.1        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 239,vol = 192 mv,press = 760 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.426     0.881      0.171    (g)
+omeg[XYZ]:    0.0        0.1        -0.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 234,vol = 188 mv,press = 735 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.885      0.175    (g)
+omeg[XYZ]:    -0.2       0.2        -0.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 206,vol = 166 mv,press = 599 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.426     0.887      0.173    (g)
+omeg[XYZ]:    -0.1       0.1        -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 138,vol = 111 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.425     0.889      0.175    (g)
+omeg[XYZ]:    -0.3       -0.1       -0.6     (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.421     0.891      0.169    (g)
+omeg[XYZ]:    -0.3       -0.2       0.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.429     0.882      0.183    (g)
+omeg[XYZ]:    -0.4       -0.3       -1.2     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.2       -4.5     (бу)
+acc[XYZ]:    -0.433     0.869      0.165    (g)
+omeg[XYZ]:    -3.1       2.7        -4.3     (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.454     0.903      0.180    (g)
+omeg[XYZ]:    2.0        3.4        -14.1    (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.4     (бу)
+acc[XYZ]:    -0.412     0.875      0.175    (g)
+omeg[XYZ]:    -1.2       1.3        -2.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.4     (бу)
+acc[XYZ]:    -0.426     0.886      0.170    (g)
+omeg[XYZ]:    -1.0       1.6        -0.4     (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.4     (бу)
+acc[XYZ]:    -0.433     0.881      0.172    (g)
+omeg[XYZ]:    0.2        1.8        -2.3     (бу/s)
+CHECK BLE STATE! 
+ADval = 116,vol = 93 mv,press = 0 g
+
+ang[XYZ]:    79.0       25.3       -4.5     (бу)
+acc[XYZ]:    -0.386     0.893      0.153    (g)
+omeg[XYZ]:    4.3        -2.0       -1.0     (бу/s)
+CHECK BLE STATE! 
+ADval = 130,vol = 104 mv,press = 0 g
+
+ang[XYZ]:    79.1       25.2       -4.3     (бу)
+acc[XYZ]:    -0.375     0.927      0.153    (g)
+omeg[XYZ]:    10.5       4.3        1.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
+
+ang[XYZ]:    78.2       24.9       -4.6     (бу)
+acc[XYZ]:    -0.739     1.042      -0.026   (g)
+omeg[XYZ]:    -68.1      2.0        121.9    (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    78.7       25.1       -4.4     (бу)
+acc[XYZ]:    -0.561     0.566      0.187    (g)
+omeg[XYZ]:    -67.8      -23.4      -13.5    (бу/s)
+CHECK BLE STATE! 
+ADval = 126,vol = 101 mv,press = 0 g
+
+ang[XYZ]:    76.8       24.5       -4.7     (бу)
+acc[XYZ]:    -0.284     0.457      -0.039   (g)
+omeg[XYZ]:    -113.5     -49.0      -28.4    (бу/s)
+CHECK BLE STATE! 
+ADval = 130,vol = 104 mv,press = 0 g
+
+ang[XYZ]:    73.8       25.9       -7.1     (бу)
+acc[XYZ]:    0.434      -0.218     -1.965   (g)
+omeg[XYZ]:    -119.0     -343.8     7.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 129,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    67.1       21.9       -2.3     (бу)
+acc[XYZ]:    -0.936     1.871      -0.143   (g)
+omeg[XYZ]:    14.9       216.3      164.9    (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    62.3       19.3       4.4      (бу)
+acc[XYZ]:    -1.067     1.264      -1.125   (g)
+omeg[XYZ]:    -302.5     252.1      -62.9    (бу/s)
+CHECK BLE STATE! 
+ADval = 132,vol = 106 mv,press = 0 g
+
+ang[XYZ]:    62.8       21.8       14.6     (бу)
+acc[XYZ]:    -1.104     1.373      0.799    (g)
+omeg[XYZ]:    17.9       435.7      193.4    (бу/s)
+CHECK BLE STATE! 
+ADval = 128,vol = 103 mv,press = 0 g
+
+ang[XYZ]:    73.1       27.5       28.4     (бу)
+acc[XYZ]:    0.225      0.048      1.677    (g)
+omeg[XYZ]:    34.2       338.1      75.8     (бу/s)
+CHECK BLE STATE! 
+ADval = 123,vol = 99 mv,press = 0 g
+
+ang[XYZ]:    72.6       25.8       31.0     (бу)
+acc[XYZ]:    0.434      0.225      1.108    (g)
+omeg[XYZ]:    -78.3      -54.4      74.8     (бу/s)
+CHECK BLE STATE! 
+ADval = 127,vol = 102 mv,press = 0 g
+
+ang[XYZ]:    67.3       25.8       29.7     (бу)
+acc[XYZ]:    -0.273     1.426      0.857    (g)
+omeg[XYZ]:    -9.0       37.8       -38.5    (бу/s)
+CHECK BLE STATE! 
+ADval = 130,vol = 104 mv,press = 0 g
+
+ang[XYZ]:    70.2       24.5       29.4     (бу)
+acc[XYZ]:    -0.436     0.703      0.299    (g)
+omeg[XYZ]:    96.8       -13.9      21.9     (бу/s)
+CHECK BLE STATE! 
+ADval = 137,vol = 110 mv,press = 0 g
+
+ang[XYZ]:    69.6       25.1       29.4     (бу)
+acc[XYZ]:    -0.321     0.725      0.328    (g)
+omeg[XYZ]:    -54.0      2.1        -13.0    (бу/s)
+CHECK BLE STATE! 
+ADval = 154,vol = 124 mv,press = 0 g
+
+ang[XYZ]:    69.6       24.8       29.4     (бу)
+acc[XYZ]:    -0.487     0.970      0.287    (g)
+omeg[XYZ]:    28.0       18.7       1.9      (бу/s)
+CHECK BLE STATE! 
+ADval = 153,vol = 123 mv,press = 0 g
+
+ang[XYZ]:    70.0       24.8       29.5     (бу)
+acc[XYZ]:    -0.350     0.721      0.276    (g)
+omeg[XYZ]:    -5.7       -7.0       0.9      (бу/s)
+CHECK BLE STATE! 
+ADval = 154,vol = 124 mv,press = 0 g
+
+ang[XYZ]:    69.8       24.8       29.5     (бу)
+acc[XYZ]:    -0.454     0.952      0.289    (g)
+omeg[XYZ]:    4.9        0.4        3.5      (бу/s)
+CHECK BLE STATE! 
+ADval = 156,vol = 125 mv,press = 0 g
+
+ang[XYZ]:    70.2       24.7       29.6     (бу)
+acc[XYZ]:    -0.393     0.801      0.284    (g)
+omeg[XYZ]:    0.1        -1.0       0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 161,vol = 129 mv,press = 0 g
+
+ang[XYZ]:    70.1       24.7       29.6     (бу)
+acc[XYZ]:    -0.429     0.911      0.284    (g)
+omeg[XYZ]:    -1.9       -2.0       1.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 170,vol = 136 mv,press = 0 g
+
+ang[XYZ]:    70.3       24.7       29.7     (бу)
+acc[XYZ]:    -0.401     0.832      0.283    (g)
+omeg[XYZ]:    1.2        -0.7       1.5      (бу/s)
+CHECK BLE STATE! 
+ADval = 166,vol = 133 mv,press = 0 g
+
+ang[XYZ]:    70.2       24.7       29.7     (бу)
+acc[XYZ]:    -0.418     0.881      0.285    (g)
+omeg[XYZ]:    -1.5       -1.1       0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 175,vol = 141 mv,press = 0 g
+
+ang[XYZ]:    70.4       24.7       29.7     (бу)
+acc[XYZ]:    -0.406     0.854      0.284    (g)
+omeg[XYZ]:    1.6        0.1        0.6      (бу/s)
+CHECK BLE STATE! 
+ADval = 188,vol = 151 mv,press = 506 g
+
+ang[XYZ]:    70.4       24.7       29.8     (бу)
+acc[XYZ]:    -0.415     0.869      0.284    (g)
+omeg[XYZ]:    -0.8       -0.8       0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 187,vol = 150 mv,press = 500 g
+
+ang[XYZ]:    70.5       24.6       29.8     (бу)
+acc[XYZ]:    -0.409     0.859      0.286    (g)
+omeg[XYZ]:    0.3        -0.7       0.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 186,vol = 149 mv,press = 0 g
+
+ang[XYZ]:    70.5       24.6       29.8     (бу)
+acc[XYZ]:    -0.414     0.866      0.284    (g)
+omeg[XYZ]:    0.2        -0.2       -0.5     (бу/s)
+CHECK BLE STATE! 
+ADval = 191,vol = 153 mv,press = 518 g
+
+ang[XYZ]:    70.6       24.6       29.8     (бу)
+acc[XYZ]:    -0.411     0.860      0.283    (g)
+omeg[XYZ]:    -0.1       0.4        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 199,vol = 160 mv,press = 561 g
+
+ang[XYZ]:    70.7       24.6       29.9     (бу)
+acc[XYZ]:    -0.412     0.864      0.283    (g)
+omeg[XYZ]:    0.1        0.0        0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 219,vol = 176 mv,press = 660 g
+
+ang[XYZ]:    70.7       24.6       29.9     (бу)
+acc[XYZ]:    -0.412     0.860      0.282    (g)
+omeg[XYZ]:    0.1        -0.2       0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 228,vol = 183 mv,press = 704 g
+
+ang[XYZ]:    70.8       24.6       29.9     (бу)
+acc[XYZ]:    -0.411     0.862      0.285    (g)
+omeg[XYZ]:    -0.1       -0.2       0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 236,vol = 190 mv,press = 747 g
+
+ang[XYZ]:    70.8       24.6       29.9     (бу)
+acc[XYZ]:    -0.411     0.862      0.285    (g)
+omeg[XYZ]:    0.1        -0.2       0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 255,vol = 205 mv,press = 840 g
+
+ang[XYZ]:    70.9       24.6       29.9     (бу)
+acc[XYZ]:    -0.414     0.861      0.285    (g)
+omeg[XYZ]:    0.1        0.3        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 267,vol = 215 mv,press = 902 g
+
+ang[XYZ]:    70.9       24.6       30.0     (бу)
+acc[XYZ]:    -0.415     0.860      0.286    (g)
+omeg[XYZ]:    -0.5       0.1        0.0      (бу/s)
+CHECK BLE STATE! 
+ADval = 265,vol = 213 mv,press = 890 g
+
+ang[XYZ]:    70.9       24.5       30.0     (бу)
+acc[XYZ]:    -0.412     0.862      0.285    (g)
+omeg[XYZ]:    0.0        -0.1       0.2      (бу/s)
+CHECK BLE STATE! 
+ADval = 280,vol = 225 mv,press = 964 g
+
+ang[XYZ]:    71.0       24.5       30.0     (бу)
+acc[XYZ]:    -0.410     0.866      0.285    (g)
+omeg[XYZ]:    0.4        -0.5       -0.1     (бу/s)
+CHECK BLE STATE! 
+ADval = 262,vol = 211 mv,press = 877 g
+
+ang[XYZ]:    71.0       24.5       30.0     (бу)
+acc[XYZ]:    -0.411     0.861      0.283    (g)
+omeg[XYZ]:    0.0        0.2        0.1      (бу/s)
+CHECK BLE STATE! 
+ADval = 222,vol = 178 mv,press = 673 g
+
+ang[XYZ]:    71.0       24.5       30.0     (бу)
+acc[XYZ]:    -0.410     0.862      0.291    (g)
+omeg[XYZ]:    -0.1       -0.6       0.4      (бу/s)
+CHECK BLE STATE! 
+ADval = 160,vol = 128 mv,press = 0 g
+
+ang[XYZ]:    71.1       24.5       30.0     (бу)
+acc[XYZ]:    -0.414     0.859      0.298    (g)
+omeg[XYZ]:    -0.2       -1.0       0.9      (бу/s)
+CHECK BLE STATE! 
+ADval = 140,vol = 112 mv,press = 0 g
+
+ang[XYZ]:    71.1       24.5       30.0     (бу)
+acc[XYZ]:    -0.475     0.813      0.386    (g)
+omeg[XYZ]:    7.2        2.1        2.3      (бу/s)
+CHECK BLE STATE! 
+ADval = 124,vol = 99 mv,press = 0 g
+
+ang[XYZ]:    70.8       24.4       30.0     (бу)
+acc[XYZ]:    -0.424     0.938      0.302    (g)
+omeg[XYZ]:    -1.8       -8.0       5.7      (бу/s)
+CHECK BLE STATE! 
+ADval = 125,vol = 100 mv,press = 0 g
