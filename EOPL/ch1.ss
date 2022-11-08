@@ -134,7 +134,7 @@
 (define (rson bitree)
     (caddr bitree))
 
-; Bintree -> Int | ListOfInt
+; Bintree -> Int | Symbol
 (define (contents-of bitree)
     (if (leaf? bitree) bitree
             (car bitree)))
@@ -155,3 +155,61 @@
                                    (mark/count (lson bt) count)
                                    (mark/count (rson bt) count)))))
     (mark/count bitree 0))
+
+;; BinarySearchTree ::= () | (Int BinarySearchTree BinarySearchTree)
+; constraint: leftkey <= current-node, rightkey > current-node
+
+; List >< Obj -> List
+(define (append l x)
+    (if (null? l) (list x)
+            (cons (car l) (append (cdr l) x))))
+
+; Int >< BST -> List
+(define (path n bst)
+    (define (path-with-history n bst his-list)
+        (cond ((null? bst) '())
+              ((= n (car bst)) his-list)
+              ((<= n (car bst)) (path-with-history n (cadr bst) (append his-list 'left)))
+              (else (path-with-history n (caddr bst) (append his-list 'right)))))
+    (path-with-history n bst '()))
+
+; BinTree -> BinTree
+(define (number-leaves bitree)
+    ; Memory ::= (Bintree . Int)
+    ; Memory -> Memory
+    (define (number-leaves-with-mem mem)
+        (let [(current-tree (car mem))
+              (num (cdr mem))]
+                (if (leaf? current-tree)
+                        (cons (leaf (+ 1 num))
+                              (+ 1 num))
+                        ; nested let: let*
+                        ; the "name" is from "assignment".      
+                        (let* [(left-mem (number-leaves-with-mem (cons (lson current-tree) num))) ; left-node
+                               (left-tree (car left-mem))
+                               (left-num (cdr left-mem))
+                               (right-mem (number-leaves-with-mem (cons (rson current-tree) left-num))) ; right node
+                               (right-tree (car right-mem))
+                               (right-num (cdr right-mem))]
+                                    (cons   (interior-node (contents-of current-tree) ; current node
+                                                           left-tree
+                                                           right-tree)
+                                            right-num)))))
+    (car (number-leaves-with-mem (cons bitree -1))))
+
+; number-elements: ListOfScmval -> ListOf(Int, Scmval)
+; g: (Int, Scmval) >< ListOf(Int, Scmval) -> ListOf(Int, Scmval)
+(define (number-elements lst)
+    ; follow the grammar!
+    (define (g lcs listlcs)
+        (if (null? listlcs) (cons lcs listlcs) ; trivially cons the (Int, Scmval) to empty list
+                (let [(count (car lcs))
+                      (nextsval (cadar listlcs))
+                      (restlist (cdr listlcs))]
+                        ; increment the count of current element as next element's number (part pof g's input for generating ListOf(Int, Scmval)), 
+                        ; and make current element out of g, (number-elements nests g, obey the contrast of output grammar: ListOf(Int, Scmval)) 
+                        (cons lcs (g (list (+ 1 count) nextsval) restlist)))))
+    (if (null? lst) '()
+            (g (list 0 (car lst)) (number-elements (cdr lst)))))
+
+
