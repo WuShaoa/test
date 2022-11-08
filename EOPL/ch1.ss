@@ -207,7 +207,7 @@
                       (nextsval (cadar listlcs))
                       (restlist (cdr listlcs))]
                         ; increment the count of current element as next element's number (part pof g's input for generating ListOf(Int, Scmval)), 
-                        ; and make current element out of g, (number-elements nests g, obey the contrast of output grammar: ListOf(Int, Scmval)) 
+                        ; and make current element out of g, (number-elements nests g, obey the contract of output grammar: ListOf(Int, Scmval)) 
                         (cons lcs (g (list (+ 1 count) nextsval) restlist)))))
     (if (null? lst) '()
             (g (list 0 (car lst)) (number-elements (cdr lst)))))
