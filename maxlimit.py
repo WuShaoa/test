@@ -19,3 +19,42 @@ for i in range(length):
     max = candidate if max < candidate else max
 
 print(max)
+
+# huawei 面试题2
+# 输入：节点数、边数、连接关系、屏蔽节点数，屏蔽节点 输出：由根通向最短叶节点的路径
+tree = {}
+old_tree = {}
+edges = []
+node_num = int(input())
+edge_num = int(input())
+for i in range(edge_num):
+    edges.append(input().split())
+block_num = int(input())
+edges.sort(key=lambda x: int(x[0]))
+for edge in edges:
+    flag = True
+    if edge[0] == '0': 
+        tree["->".join(edge)] = 1
+        flag = False
+    else:    
+        for key in list(tree.keys()):
+            if key[-1] == edge[0]:
+                cnt = tree.pop(key)            
+                tree[key + "->" + edge[1]] = cnt + 1
+                old_tree[key] = cnt
+                flag = False
+                break
+    if flag:
+        for key in list(old_tree.keys()):
+            if key[-1] == edge[0]:           
+                tree[key + "->" + edge[1]] = old_tree[key] + 1
+                break
+for i in range(block_num):
+    blocked_node = input()
+    for key in list(tree.keys()):
+        if key.find(blocked_node) != -1:
+            tree.pop(key)
+min, min_way = -1, "NULL"
+for key in tree.keys():
+    if min == -1 or min > tree[key]: min, min_way = tree[key], key
+print(min_way)
