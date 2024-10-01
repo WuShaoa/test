@@ -33,12 +33,12 @@ def recurse(board, row):
         print_board(board, count) 
         return
     for i in range(8):
-        if canplace(board, row, i):
+        if canplace(board, row, i): 
             global iter_count
             iter_count += 1
             board[row][i] = 1
             recurse(board, row+1)
-            board[row][i] = 0
+            board[row][i] = 0 # backtrack 回溯
             
 if __name__ == '__main__':
     print_board(board)
