@@ -1,0 +1,94 @@
+#| -*-Scheme-*-
+
+Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994,
+    1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
+    2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
+    2017, 2018, 2019, 2020, 2021, 2022 Massachusetts Institute of
+    Technology
+
+This file is part of MIT/GNU Scheme.
+
+MIT/GNU Scheme is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+
+MIT/GNU Scheme is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MIT/GNU Scheme; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+|#
+
+(load-option 'cref)
+
+(if (not (name->package '(edwin)))
+    (let ((package-set (package-set-pathname "edwin")))
+      (if (not (file-modification-time<? "edwin.pkg" package-set))
+	  (cref/generate-trivial-constructor "edwin"))
+      (construct-packages-from-file (fasload package-set))))
+
+(if (lexical-unreferenceable? (->environment '(edwin string))
+			      'string?)
+    (begin
+      (fluid-let ((sf/default-syntax-table (->environment '(edwin))))
+	(sf-conditionally "string"))
+      (receive (scm bin spec) (sf/pathname-defaulting "string" #f #f)
+	scm spec
+	(load bin '(edwin string)))))
+
+(if (lexical-unreferenceable? (->environment '(edwin class-constructor))
+			      'class-descriptors)
+    (begin
+      (let ((sf-and-load
+	     (lambda (files package)
+	       (fluid-let ((sf/default-syntax-table (->environment '())))
+		 (sf-conditionally files))
+	       (for-each (lambda (file)
+			   (receive (scm bin spec)
+				    (sf/pathname-defaulting file #f #f)
+			     scm spec
+			     (load bin package)))
+			 files))))
+	(sf-and-load '("macros") '(edwin macros))
+	(sf-and-load '("clsmac") '(edwin class-macros))
+	(sf-and-load '("xform")
+		     '(edwin class-macros transform-instance-variables))
+	(sf-and-load '("class") '(edwin))
+	(sf-and-load '("clscon") '(edwin class-constructor)))))
+
+(let ((read-class-definitions
+       (lambda (filename)
+	 (if (environment-bound? system-global-environment 'with-notification)
+	     (with-notification
+		 (lambda (port)
+		   (write-string "Pre-loading class definitions from " port)
+		   (write filename port))
+	       (lambda ()
+		 (syntax* (read-file (string-append filename ".scm"))
+			  (->environment '(edwin window)))))
+	     (begin
+	       (fresh-line)
+	       (write-string "Pre-loading class definitions from ")
+	       (write filename)
+	       (syntax* (read-file (string-append filename ".scm"))
+			(->environment '(edwin window)))
+	       (write-string " -- done")
+	       (newline))))))
+  (read-class-definitions "window")
+  (read-class-definitions "utlwin")
+  (read-class-definitions "modwin")
+  (read-class-definitions "bufwin")
+  (read-class-definitions "comwin")
+  (read-class-definitions "buffrm")
+  (read-class-definitions "edtfrm"))
+
+(load "decls")
+
+(cref/generate-constructors "edwin")
+(sf-conditionally "edwin.ldr")

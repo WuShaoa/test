@@ -1,0 +1,246 @@
+#| -*-Scheme-*-
+
+Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994,
+    1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
+    2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
+    2017, 2018, 2019, 2020, 2021, 2022 Massachusetts Institute of
+    Technology
+
+This file is part of MIT/GNU Scheme.
+
+MIT/GNU Scheme is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+
+MIT/GNU Scheme is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MIT/GNU Scheme; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+|#
+
+;;;; Edwin: Syntaxing Declarations
+
+(declare (usual-integrations))
+
+(let* ((sf-names (lambda (file) (sf/pathname-defaulting file #f #f)))
+       (scm-file (lambda (file) (receive (scm bin spec) (sf-names file) scm)))
+       (bin-file (lambda (file) (receive (scm bin spec) (sf-names file) bin)))
+       (bin-time (lambda (file) (file-modification-time (bin-file file))))
+       (sf-dependent
+	(lambda (environment)
+	  (lambda (source . dependencies)
+	    (let ((reasons
+		   (let ((source-time (bin-time source)))
+		     (append
+		      (receive (scm bin spec) (sf-names source)
+			(if (file-modification-time<=? scm bin)
+			    '()
+			    (list scm)))
+		      (map bin-file
+			   (if source-time
+			       (filter (lambda (dependency)
+					 (let ((bin-time
+						(bin-time dependency)))
+					   (or (not bin-time)
+					       (< source-time bin-time))))
+				       dependencies)
+			       dependencies))))))
+	      (if (not (null? reasons))
+		  (begin
+		    #|
+		    (let ((notify
+			   (lambda (port)
+			     (write-string "Processing " port)
+			     (write source port)
+			     (write-string " because of:" port)
+			     (for-each (lambda (reason)
+					 (write-char #\space port)
+					 (write reason port))
+				       reasons))))
+		      (if (environment-bound? system-global-environment
+					      'write-notification-line)
+			  (write-notification-line notify)
+			  (notify (notification-output-port))))
+		    |#
+		    (fluid-let ((sf/default-syntax-table environment)
+				(sf/default-declarations
+				 (map (lambda (dependency)
+					`(integrate-external ,dependency))
+				      dependencies)))
+		      (sf source))))))))
+       (sf-edwin (sf-dependent (->environment '(EDWIN))))
+       (sf-class (sf-dependent (->environment '(EDWIN WINDOW)))))
+  (for-each sf-edwin
+	    '("ansi"
+	      "bios"
+	      "class"
+	      "clscon"
+	      "clsmac"
+	      "comatch"
+	      "display"
+	      "key-w32"
+	      "macros"
+	      "make"
+	      "nntp"
+	      "nvector"
+	      "paths"
+	      "rcsparse"
+	      "rfc822"
+	      "ring"
+	      "string"
+	      "strpad"
+	      "strtab"
+	      "termcap"
+	      "utils"
+	      "win32"
+	      "xform"
+	      "xterm"))
+  (sf-edwin "tterm" "termcap")
+  (let ((includes '("struct" "comman" "modes" "buffer" "edtstr")))
+    (let loop ((files includes) (includes '()))
+      (if (pair? files)
+	  (begin
+	    (apply sf-edwin (car files) includes)
+	    (loop (cdr files) (cons (car files) includes)))))
+    (for-each (lambda (filename)
+		(apply sf-edwin filename includes))
+	      '("abbrev"
+                "adapters"
+		"argred"
+		"artdebug"
+		"autold"
+		"autosv"
+		"basic"
+		;;"bochser"
+		;;"bochsmod"
+		"bufcom"
+		"bufinp"
+		"bufmnu"
+		"bufout"
+		"bufset"
+		"c-mode"
+		"calias"
+		"cinden"
+		"comhst"
+		"comint"
+		"compile"
+		"comtab"
+		"comred"
+		"curren"
+		"dabbrev"
+		"debian-changelog"
+		"debug"
+		"debuge"
+		"diff"
+		"dired"
+		"dirunx"
+		"dirw32"
+		"docstr"
+		"dos"
+		"doscom"
+		"dosfile"
+		"dosproc"
+		"dosshell"
+		"ed-ffi"
+		"editor"
+		"evlcom"
+		"eystep"
+		"filcom"
+		"fileio"
+		"fill"
+		"grpops"
+		"hlpcom"
+		"htmlmode"
+		"image"
+		"info"
+		"input"
+		"intmod"
+		"iserch"
+		"javamode"
+		"keymap"
+		"keyparse"
+		"kilcom"
+		"kmacro"
+		"lincom"
+		"linden"
+		"loadef"
+		"lspcom"
+		"malias"
+		"manual"
+		"midas"
+		"modefs"
+		"modlin"
+		"motcom"
+		"motion"
+		"mousecom"
+		"notify"
+		"outline"
+		"occur"
+		"paredit"
+		"pasmod"
+		"print"
+		"process"
+		"prompt"
+		"pwedit"
+		"pwparse"
+		;;"rcs"
+		"reccom"
+		"regcom"
+		"regexp"
+		"regops"
+		"replaz"
+		"rmail"
+		"rmailsrt"
+		"rmailsum"
+		"schmod"
+		"scrcom"
+		"screen"
+		"search"
+		"sendmail"
+		"sercom"
+		"shell"
+		"simple"
+		"snr"
+		"sort"
+		"syntax"
+		"tagutl"
+		"techinfo"
+		"telnet"
+		"texcom"
+		"things"
+		"tparse"
+		"tximod"
+		"txtprp"
+		"undo"
+		"unix"
+		"vc"
+		"vc-bzr"
+		"vc-cvs"
+		"vc-git"
+		"vc-rcs"
+		"vc-svn"
+		"verilog"
+		"vhdl"
+		"webster"
+		"wincom"
+		"winout"
+		"win32com"
+		"world-monitor")))
+  (for-each sf-class
+	    '("comwin"
+	      "modwin"
+	      "edtfrm"))
+  (sf-class "window" "class")
+  (sf-class "utlwin" "window" "class")
+  (sf-class "bufwin" "window" "class" "buffer" "struct")
+  (sf-class "bufwfs" "bufwin" "window" "class" "buffer" "struct")
+  (sf-class "bufwiu" "bufwin" "window" "class" "buffer" "struct")
+  (sf-class "bufwmc" "bufwin" "window" "class" "buffer" "struct")
+  (sf-class "buffrm" "bufwin" "window" "class" "struct"))

@@ -1,0 +1,1478 @@
+@node Lists, Vectors, Strings, Top
+@chapter Lists
+
+@cindex pair (defn)
+@cindex dotted pair (see pair)
+@cindex car field, of pair (defn)
+@cindex cdr field, of pair (defn)
+A @dfn{pair} (sometimes called a @dfn{dotted pair}) is a data structure
+with two fields called the @dfn{car} and @dfn{cdr} fields (for
+historical reasons).  Pairs are created by the procedure @code{cons}.
+The car and cdr fields are accessed by the procedures @code{car} and
+@code{cdr}.  The car and cdr fields are assigned by the procedures
+@code{set-car!} and @code{set-cdr!}.
+
+@cindex list (defn)
+Pairs are used primarily to represent @dfn{lists}.  A list can be
+defined recursively as either the empty list or a pair whose cdr is
+a list.  More precisely, the set of lists is defined as the smallest set
+@var{X} such that
+
+@itemize @bullet
+@item
+The empty list is in @var{X}.
+
+@item
+If @var{list} is in @var{X}, then any pair whose cdr field contains
+@var{list} is also in @var{X}.
+@end itemize
+
+@cindex element, of list (defn)
+@cindex length, of list (defn)
+@cindex empty list (defn)
+The objects in the car fields of successive pairs of a list are the
+@dfn{elements} of the list.  For example, a two-element list is a pair
+whose car is the first element and whose cdr is a pair whose car is the
+second element and whose cdr is the empty list.  The @dfn{length} of a
+list is the number of elements, which is the same as the number of
+pairs.  The @dfn{empty list} is a special object of its own type (it is
+not a pair); it has no elements and its length is zero.@footnote{The
+above definitions imply that all lists have finite length and are
+terminated by the empty list.}
+
+@cindex dotted notation, for pair (defn)
+@cindex notation, dotted (defn)
+@cindex external representation, for pair
+@cindex pair, external representation
+@cindex ( as external representation
+@cindex ) as external representation
+@cindex . as external representation
+@cindex parenthesis, as external representation
+@cindex dot, as external representation
+@cindex period, as external representation
+@findex (
+@findex )
+@findex .
+The most general notation (external representation) for Scheme pairs is
+the ``dotted'' notation @code{(@var{c1} . @var{c2})} where @var{c1} is
+the value of the car field and @var{c2} is the value of the cdr field.
+For example, @code{(4 . 5)} is a pair whose car is @code{4} and whose
+cdr is @code{5}.  Note that @code{(4 . 5)} is the external
+representation of a pair, not an expression that evaluates to a pair.
+
+@cindex external representation, for list
+@cindex list, external representation
+@cindex external representation, for empty list
+@cindex empty list, external representation
+@findex ()
+A more streamlined notation can be used for lists: the elements of the
+list are simply enclosed in parentheses and separated by spaces.  The
+empty list is written @code{()}.  For example, the following are
+equivalent notations for a list of symbols:
+
+@example
+@group
+(a b c d e)
+(a . (b . (c . (d . (e . ())))))
+@end group
+@end example
+
+@findex set-cdr!
+Whether a given pair is a list depends upon what is stored in the cdr
+field.  When the @code{set-cdr!} procedure is used, an object can be a
+list one moment and not the next:
+
+@example
+@group
+(define x (list 'a 'b 'c))
+(define y x)
+y                                       @result{} (a b c)
+(list? y)                               @result{} #t
+(set-cdr! x 4)                          @result{} @r{unspecified}
+x                                       @result{} (a . 4)
+(eqv? x y)                              @result{} #t
+y                                       @result{} (a . 4)
+(list? y)                               @result{} #f
+(set-cdr! x x)                          @result{} @r{unspecified}
+(list? y)                               @result{} #f
+@end group
+@end example
+
+@cindex improper list (defn)
+@cindex list, improper (defn)
+A chain of pairs that doesn't end in the empty list is called an
+@dfn{improper list}.  Note that an improper list is not a list.  The
+list and dotted notations can be combined to represent improper lists,
+as the following equivalent notations show:
+
+@example
+@group
+(a b c . d)
+(a . (b . (c . d)))
+@end group
+@end example
+
+@findex quote
+@findex quasiquote
+@findex unquote
+@findex unquote-splicing
+@findex '
+@findex `
+@findex ,
+@findex ,@@
+@findex read
+Within literal expressions and representations of objects read by the
+@code{read} procedure, the forms @code{'@var{datum}},
+@code{`@var{datum}}, @code{,@var{datum}}, and @code{,@@@var{datum}}
+denote two-element lists whose first elements are the symbols
+@code{quote}, @code{quasiquote}, @code{unquote}, and
+@code{unquote-splicing}, respectively.  The second element in each case
+is @var{datum}.  This convention is supported so that arbitrary Scheme
+programs may be represented as lists.  Among other things, this permits
+the use of the @code{read} procedure to parse Scheme programs.
+
+@menu
+* Pairs::
+* Construction of Lists::
+* Selecting List Components::
+* Cutting and Pasting Lists::
+* Filtering Lists::
+* Searching Lists::
+* Mapping of Lists::
+* Folding of Lists::
+* Miscellaneous List Operations::
+@end menu
+
+@node Pairs, Construction of Lists, Lists, Lists
+@section Pairs
+
+This section describes the simple operations that are available for
+constructing and manipulating arbitrary graphs constructed from pairs.
+
+@deffn {standard procedure} pair? object
+@cindex type predicate, for pair
+Returns @code{#t} if @var{object} is a pair; otherwise returns
+@code{#f}.
+
+@example
+@group
+(pair? '(a . b))                        @result{} #t
+(pair? '(a b c))                        @result{} #t
+(pair? '())                             @result{} #f
+(pair? '#(a b))                         @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} cons obj1 obj2
+@cindex construction, of pair
+@findex eqv?
+Returns a newly allocated pair whose car is @var{obj1} and whose cdr is
+@var{obj2}.  The pair is guaranteed to be different (in the sense of
+@code{eqv?}) from every previously existing object.
+
+@example
+@group
+(cons 'a '())                           @result{} (a)
+(cons '(a) '(b c d))                    @result{} ((a) b c d)
+(cons "a" '(b c))                       @result{} ("a" b c)
+(cons 'a 3)                             @result{} (a . 3)
+(cons '(a b) 'c)                        @result{} ((a b) . c)
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} xcons obj1 obj2
+Returns a newly allocated pair whose car is @var{obj2} and whose cdr
+is @var{obj1}.
+
+@example
+(xcons '(b c) 'a)                       @result{} (a b c)
+@end example
+@end deffn
+
+@deffn {standard procedure} car pair
+@cindex selection, of pair component
+@cindex component selection, of pair
+Returns the contents of the car field of @var{pair}.  Note that it is an
+error to take the @code{car} of the empty list.
+
+@example
+@group
+(car '(a b c))                          @result{} a
+(car '((a) b c d))                      @result{} (a)
+(car '(1 . 2))                          @result{} 1
+(car '())                               @error{} Illegal datum
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} cdr pair
+Returns the contents of the cdr field of @var{pair}.  Note that it is an
+error to take the @code{cdr} of the empty list.
+
+@example
+@group
+(cdr '((a) b c d))                      @result{} (b c d)
+(cdr '(1 . 2))                          @result{} 2
+(cdr '())                               @error{} Illegal datum
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} car+cdr pair
+The fundamental pair deconstructor:
+
+@example
+(lambda (p) (values (car p) (cdr p)))
+@end example
+
+@example
+@group
+(receive (a b) (car+cdr (cons 1 2))
+  (write-line a)
+  (write-line b))
+@print{} 1
+@print{} 2
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} set-car! pair object
+Stores @var{object} in the car field of @var{pair}.  The value returned
+by @code{set-car!} is unspecified.
+
+@example
+@group
+(define (f) (list 'not-a-constant-list))
+(define (g) '(constant-list))
+(set-car! (f) 3)                        @result{} @r{unspecified}
+(set-car! (g) 3)                        @error{} Illegal datum
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} set-cdr! pair object
+Stores @var{object} in the cdr field of @var{pair}.  The value returned
+by @code{set-cdr!} is unspecified.
+@end deffn
+
+@deffn {standard procedure} caar pair
+@deffnx {standard procedure} cadr pair
+@deffnx {standard procedure} cdar pair
+@deffnx {standard procedure} cddr pair
+@deffnx {standard procedure} caaar pair
+@deffnx {standard procedure} caadr pair
+@deffnx {standard procedure} cadar pair
+@deffnx {standard procedure} caddr pair
+@deffnx {standard procedure} cdaar pair
+@deffnx {standard procedure} cdadr pair
+@deffnx {standard procedure} cddar pair
+@deffnx {standard procedure} cdddr pair
+@deffnx {standard procedure} caaaar pair
+@deffnx {standard procedure} caaadr pair
+@deffnx {standard procedure} caadar pair
+@deffnx {standard procedure} caaddr pair
+@deffnx {standard procedure} cadaar pair
+@deffnx {standard procedure} cadadr pair
+@deffnx {standard procedure} caddar pair
+@deffnx {standard procedure} cadddr pair
+@deffnx {standard procedure} cdaaar pair
+@deffnx {standard procedure} cdaadr pair
+@deffnx {standard procedure} cdadar pair
+@deffnx {standard procedure} cdaddr pair
+@deffnx {standard procedure} cddaar pair
+@deffnx {standard procedure} cddadr pair
+@deffnx {standard procedure} cdddar pair
+@deffnx {standard procedure} cddddr pair
+These procedures are compositions of @code{car} and @code{cdr}; for
+example, @code{caddr} could be defined by
+
+@example
+(define caddr (lambda (x) (car (cdr (cdr x)))))
+@end example
+@end deffn
+
+@deffn procedure general-car-cdr object path
+This procedure is a generalization of @code{car} and @code{cdr}.
+@var{Path} encodes a particular sequence of @code{car} and @code{cdr}
+operations, which @code{general-car-cdr} executes on @var{object}.
+@var{Path} is an exact non-negative integer that encodes the operations
+in a bitwise fashion: a zero bit represents a @code{cdr} operation, and
+a one bit represents a @code{car}.  The bits are executed LSB to MSB,
+and the most significant one bit, rather than being interpreted as an
+operation, signals the end of the sequence.@footnote{Note that
+@var{path} is restricted to a machine-dependent range, usually the size
+of a machine word.  On many machines, this means that the maximum length
+of @var{path} will be 30 operations (32 bits, less the sign bit and the
+``end-of-sequence'' bit).}
+
+For example, the following are equivalent:
+@example
+@group
+(general-car-cdr @var{object} #b1011)
+(cdr (car (car @var{object})))
+@end group
+@end example
+
+Here is a partial table of path/operation equivalents:
+
+@example
+@group
+#b10    cdr
+#b11    car
+#b100   cddr
+#b101   cdar
+#b110   cadr
+#b111   caar
+#b1000  cdddr
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} tree-copy tree
+@cindex copying, of tree
+@cindex tree, copying
+This copies an arbitrary @var{tree} constructed from pairs, copying
+both the car and cdr elements of every pair.  This could have been
+defined by
+
+@example
+@group
+(define (tree-copy tree)
+  (let loop ((tree tree))
+    (if (pair? tree)
+        (cons (loop (car tree)) (loop (cdr tree)))
+        tree)))
+@end group
+@end example
+@end deffn
+
+@node Construction of Lists, Selecting List Components, Pairs, Lists
+@section Construction of Lists
+@cindex construction, of list
+
+@deffn {standard procedure} list object @dots{}
+Returns a list of its arguments.
+
+@example
+@group
+(list 'a (+ 3 4) 'c)                    @result{} (a 7 c)
+(list)                                  @result{} ()
+@end group
+@end example
+
+These expressions are equivalent:
+
+@example
+@group
+(list @var{obj1} @var{obj2} @dots{} @var{objN})
+(cons @var{obj1} (cons @var{obj2} @dots{} (cons @var{objN} '()) @dots{}))
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} make-list n [fill]
+Returns an @var{n}-element list, whose elements are all the value
+@var{fill}.  If the @var{fill} argument is not given, the elements of
+the list may be arbitrary values.
+
+@example
+(make-list 4 'c)                        @result{} (c c c c)
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} cons* object object @dots{}
+@findex list
+@code{cons*} is similar to @code{list}, except that @code{cons*}
+conses together the last two arguments rather than consing the last
+argument with the empty list.  If the last argument is not a list the
+result is an improper list.  If the last argument is a list, the
+result is a list consisting of the initial arguments and all of the
+items in the final argument.  If there is only one argument, the
+result is the argument.
+
+@example
+@group
+(cons* 'a 'b 'c)                        @result{} (a b . c)
+(cons* 'a 'b '(c d))                    @result{} (a b c d)
+(cons* 'a)                              @result{} a
+@end group
+@end example
+
+These expressions are equivalent:
+
+@example
+@group
+(cons* @var{obj1} @var{obj2} @dots{} @var{objN-1} @var{objN})
+(cons @var{obj1} (cons @var{obj2} @dots{} (cons @var{objN-1} @var{objN}) @dots{}))
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} list-tabulate k init-proc
+@deffnx {obsolete procedure} make-initialized-list k init-proc
+Returns a @var{k}-element list.  Element @var{i} of the list, where 0
+<= @var{i} < @var{k}, is produced by (@var{init-proc} @var{i}).  No
+guarantee is made about the dynamic order in which @var{init-proc} is
+applied to these indices.
+
+@example
+(list-tabulate 4 values) => (0 1 2 3)
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} list-copy list
+Returns a newly allocated copy of @var{list}.  This copies each of the
+pairs comprising @var{list}.  This could have been defined by
+
+@example
+@group
+(define (list-copy list)
+  (if (null? list)
+      '()
+      (cons (car list)
+            (list-copy (cdr list)))))
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} iota count [start [step]]
+Returns a list containing the elements
+
+@example
+(@var{start} @var{start}+@var{step} @dots{} @var{start}+(@var{count}-1)*@var{step})
+@end example
+
+@var{Count} must be an exact non-negative integer, while @var{start}
+and @var{step} can be any numbers.  The @var{start} and @var{step}
+parameters default to 0 and 1, respectively.
+
+@example
+@group
+(iota 5) @result{} (0 1 2 3 4)
+(iota 5 0 -0.1) @result{} (0 -0.1 -0.2 -0.3 -0.4)
+@end group
+@end example
+@end deffn
+
+
+@deffn {standard procedure} vector->list vector [start [end]]
+@deffnx {obsolete procedure} subvector->list vector start end
+@cindex vector, converting to list
+@findex list->vector
+Returns a newly allocated list of the elements of @var{vector} between
+@var{start} inclusive and @var{end} exclusive.  The inverse of
+@code{vector->list} is @code{list->vector}.
+
+@example
+(vector->list '#(dah dah didah))        @result{} (dah dah didah)
+@end example
+@end deffn
+
+
+@node Selecting List Components, Cutting and Pasting Lists, Construction of Lists, Lists
+@section Selecting List Components
+@cindex selection, of list component
+@cindex component selection, of list
+
+@deffn {standard procedure} list? object
+@deffnx {SRFI 1 procedure} proper-list? object
+@cindex type predicate, for list
+@cindex circular list
+Returns @code{#t} if @var{object} is a proper list, otherwise returns
+@code{#f}.  By definition, all proper lists have finite length and are
+terminated by the empty list.  If @var{object} is a circular list,
+returns @code{#f}.
+
+@findex pair?
+@findex null?
+Any @var{object} satisfying this predicate will also satisfy exactly one
+of @code{pair?} or @code{null?}.
+
+@example
+@group
+(list? (list 'a 'b 'c))                 @result{} #t
+(list? (cons* 'a 'b 'c))                @error{}
+(list? (circular-list 'a 'b 'c))        @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} circular-list? object
+Returns @code{#t} if @var{object} is a circular
+list, otherwise returns @code{#f}.
+
+@example
+@group
+(circular-list? (list 'a 'b 'c))        @result{} #f
+(circular-list? (cons* 'a 'b 'c))       @result{} #f
+(circular-list? (circular-list 'a 'b 'c)) @result{} #t
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} dotted-list? object
+Returns @code{#t} if @var{object} is an improper
+list, otherwise returns @code{#f}.
+
+@example
+@group
+(dotted-list? (list 'a 'b 'c))          @result{} #f
+(dotted-list? (cons* 'a 'b 'c))         @result{} #t
+(dotted-list? (circular-list 'a 'b 'c)) @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} length list
+Returns the length of @var{list}.  Signals an error if @var{list} isn't
+a proper list.
+
+@example
+@group
+(length (list 'a 'b 'c))                @result{} 3
+(length (cons* 'a 'b 'c))               @error{}
+(length (circular-list 'a 'b 'c))       @error{}
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} length+ clist
+@var{Clist} must be a proper or circular list.  If @var{clist} is a
+circular list, returns @code{#f}, otherwise returns the number of
+pairs comprising the list (which is the same as the length for a
+proper list).
+
+@example
+@group
+(length+ (list 'a 'b 'c))               @result{} 3
+(length+ (cons* 'a 'b 'c))              @error{}
+(length+ (circular-list 'a 'b 'c))      @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn procedure count-pairs object
+Counts the number of pairs in a list-like @var{object}.  If
+@var{object} is a proper list, returns the same value as
+@code{length}.  If @var{object} is a dotted list, returns the number
+of pairs including the last one.  If @var{object} is a circular list,
+counts the number of pairs up to and including the one with the
+backwards link.  If @var{object} is any other object, returns @code{0}
+as apropriate for an empty dotted list.
+
+@example
+@group
+(count-pairs (list 'a 'b 'c))           @result{} 3
+(count-pairs (cons* 'a 'b 'c))          @result{} 2
+(count-pairs (circular-list 'a 'b 'c))  @result{} 3
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} null? object
+@cindex type predicate, for empty list
+@cindex empty list, predicate for
+Returns @code{#t} if @var{object} is the empty list; otherwise returns
+@code{#f}.
+
+@example
+@group
+(null? '())                             @result{} #t
+(null? (list 'a 'b 'c))                 @result{} #f
+(null? (cons* 'a 'b 'c))                @result{} #f
+(null? (circular-list 'a 'b 'c))        @result{} #f
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} null-list? list
+@var{List} is a proper or circular list.  This procedure returns
+@code{#t} if the argument is the empty list @code{()}, and @code{#f}
+if the argument is a pair.  It is an error to pass this procedure any
+other value.  This procedure is recommended as the termination
+condition for list-processing procedures that are not defined on
+dotted lists.
+@end deffn
+
+
+@deffn {standard procedure} list-ref list k
+@cindex index, of list (defn)
+@cindex valid index, of list (defn)
+@cindex list index (defn)
+Returns the @var{k}th element of @var{list}, using zero-origin indexing.
+The @dfn{valid indexes} of a list are the exact non-negative integers
+less than the length of the list.  The first element of a list has index
+@code{0}, the second has index @code{1}, and so on.
+
+@example
+@group
+(list-ref '(a b c d) 2)                 @result{} c
+(list-ref '(a b c d)
+          (exact (round 1.8)))
+     @result{} c
+@end group
+@end example
+
+@findex drop
+@code{(list-ref @var{list} @var{k})} is equivalent to
+@code{(car (drop @var{list} @var{k}))}.
+@end deffn
+
+@deffn {SRFI 1 procedure} first list
+@deffnx {SRFI 1 procedure} second list
+@deffnx {SRFI 1 procedure} third list
+@deffnx {SRFI 1 procedure} fourth list
+@deffnx {SRFI 1 procedure} fifth list
+@deffnx {SRFI 1 procedure} sixth list
+@deffnx {SRFI 1 procedure} seventh list
+@deffnx {SRFI 1 procedure} eighth list
+@deffnx {SRFI 1 procedure} ninth list
+@deffnx {SRFI 1 procedure} tenth list
+Returns the specified element of @var{list}.  It is an error if
+@var{list} is not long enough to contain the specified element (for
+example, if the argument to @code{seventh} is a list that contains only
+six elements).
+@end deffn
+
+
+@node Cutting and Pasting Lists, Filtering Lists, Selecting List Components, Lists
+@section Cutting and Pasting Lists
+@cindex cutting, of list
+@cindex pasting, of lists
+
+@deffn {SRFI 1 procedure} take x i
+@deffnx {SRFI 1 procedure} drop x i
+@code{take} returns the first @var{i} elements of list @var{x}.
+@code{drop} returns all but the first @var{i} elements of list @var{x}.
+@example
+(take '(a b c d e)  2) => (a b)
+(drop '(a b c d e)  2) => (c d e)
+@end example
+
+@var{x} may be any value---a proper, circular, or dotted list:
+@example
+(take '(1 2 3 . d) 2) => (1 2)
+(drop '(1 2 3 . d) 2) => (3 . d)
+(take '(1 2 3 . d) 3) => (1 2 3)
+(drop '(1 2 3 . d) 3) => d
+@end example
+
+For a legal @var{i}, @code{take} and @code{drop} partition the list in
+a manner which can be inverted with @code{append}:
+@example
+(append (take @var{x} @var{i}) (drop @var{x} @var{i})) = @var{x}
+@end example
+
+@code{drop} is exactly equivalent to performing @var{i} @code{cdr}
+operations on @var{x}; the returned value shares a common tail with
+@var{x}. If the argument is a list of non-zero length, @code{take} is
+guaranteed to return a freshly-allocated list, even in the case where
+the entire list is taken, e.g. @code{(take lis (length lis))}.
+@end deffn
+
+
+@deffn {obsolete procedure} list-head x i
+@deffnx {standard procedure} list-tail x i
+Equivalent to @code{take} and @code{drop}, respectively.
+@code{list-head} is deprecated and should not be used.
+@code{list-tail} is defined by @rseven{}.
+@end deffn
+
+
+@deffn procedure sublist list start end
+@var{Start} and @var{end} must be exact integers satisfying
+
+@example
+0 <= @var{start} <= @var{end} <= (length @var{list})
+@end example
+
+@code{sublist} returns a newly allocated list formed from the elements
+of @var{list} beginning at index @var{start} (inclusive) and ending at
+@var{end} (exclusive).
+@end deffn
+
+
+@deffn {standard procedure} append list @dots{}
+@cindex appending, of lists
+Returns a list consisting of the elements of the first @var{list}
+followed by the elements of the other @var{list}s.
+
+@example
+@group
+(append '(x) '(y))                      @result{} (x y)
+(append '(a) '(b c d))                  @result{} (a b c d)
+(append '(a (b)) '((c)))                @result{} (a (b) (c))
+(append)                                @result{} ()
+@end group
+@end example
+
+The resulting list is always newly allocated, except that it shares
+structure with the last @var{list} argument.  The last argument may
+actually be any object; an improper list results if the last argument is
+not a proper list.
+
+@example
+@group
+(append '(a b) '(c . d))                @result{} (a b c . d)
+(append '() 'a)                         @result{} a
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} append! list @dots{}
+Returns a list that is the argument @var{list}s concatenated together.
+The arguments are changed rather than copied.  (Compare this with
+@code{append}, which copies arguments rather than destroying them.)  For
+example:
+
+@example
+@group
+(define x (list 'a 'b 'c))
+(define y (list 'd 'e 'f))
+(define z (list 'g 'h))
+(append! x y z)                         @result{} (a b c d e f g h)
+x                                       @result{} (a b c d e f g h)
+y                                       @result{} (d e f g h)
+z                                       @result{} (g h)
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} last pair
+@deffnx {SRFI 1 procedure} last-pair pair
+@code{last} returns the last element of the non-empty, finite list
+@var{pair}.  @code{last-pair} returns the last pair in the non-empty,
+finite list @var{pair}.
+
+@example
+@group
+(last '(a b c)) => c
+(last-pair '(a b c)) => (c)
+@end group
+@end example
+@end deffn
+
+
+@deffn {obsolete procedure} except-last-pair list
+@deffnx {obsolete procedure} except-last-pair! list
+These procedures are deprecated.  Instead use @code{drop-right} or
+@code{drop-right!}, respectively, with a second argument of @code{1}.
+@end deffn
+
+
+@node Filtering Lists, Searching Lists, Cutting and Pasting Lists, Lists
+@section Filtering Lists
+@cindex filtering, of list
+@cindex deletion, of list element
+
+@deffn {SRFI 1 procedure} filter predicate list
+Returns a newly allocated copy of @var{list} containing only the
+elements satisfying @var{predicate}.  @var{Predicate} must be a
+procedure of one argument.
+
+@example
+(filter odd? '(1 2 3 4 5)) @result{} (1 3 5)
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} remove predicate list
+Like @code{filter}, except that the returned list contains only those
+elements @emph{not} satisfying @var{predicate}.
+
+@example
+(remove odd? '(1 2 3 4 5)) @result{} (2 4)
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} partition predicate list
+Partitions the elements of @var{list} with
+@var{predicate}, and returns two values: the list of in-elements and
+the list of out-elements.  The @var{list} is not disordered---elements
+occur in the result lists in the same order as they occur in the
+argument @var{list}. The dynamic order in which the various
+applications of @code{predicate} are made is not specified.  One of
+the returned lists may share a common tail with the argument
+@var{list}.
+
+@example
+@group
+(partition symbol? '(one 2 3 four five 6)) => 
+    (one four five)
+    (2 3 6)
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} filter! predicate list
+@deffnx {SRFI 1 procedure} remove! predicate list
+@deffnx {SRFI 1 procedure} partition! predicate list
+Linear-update variants of @code{filter}, @code{remove} and
+@code{partition}.  These procedures are allowed, but not required, to
+alter the cons cells in the argument @var{list} to construct the
+result lists.
+@end deffn
+
+@deffn {SRFI 1 procedure} delete x list [compare]
+@deffnx {SRFI 1 procedure} delete! x list [compare]
+@code{delete} uses the comparison procedure @var{compare}, which
+defaults to @code{equal?}, to find all elements of @var{list} that are
+equal to @var{x}, and deletes them from @var{list}.  The dynamic order
+in which the various applications of @var{compare} are made is not
+specified.
+
+The list is not disordered---elements that appear in the result list
+occur in the same order as they occur in the argument list.  The
+result may share a common tail with the argument list.
+
+Note that fully general element deletion can be performed with the
+@code{remove} and @code{remove!} procedures, e.g.:
+@example
+;; Delete all the even elements from LIS:
+(remove even? lis)
+@end example
+
+The comparison procedure is used in this way: @code{(@var{compare}
+@var{x} @var{e@sub{i}})}.  That is, @var{x} is always the first
+argument, and a list element is always the second argument.  The
+comparison procedure will be used to compare each element of
+@var{list} exactly once; the order in which it is applied to the
+various @var{e@sub{i}} is not specified.  Thus, one can reliably
+remove all the numbers greater than five from a list with
+@code{(delete 5 list <)}.
+
+@code{delete!} is the linear-update variant of @code{delete}.  It is
+allowed, but not required, to alter the cons cells in its argument
+list to construct the result.
+@end deffn
+
+@deffn procedure delq x list
+@deffnx procedure delq! x list
+@deffnx procedure delv x list
+@deffnx procedure delv! x list
+Equivalent to @code{(delete @var{x} @var{list} eq?)}, @code{(delete!
+@var{x} @var{list} eq?)}, @code{(delete @var{x} @var{list} eqv?)}, and
+@code{(delete! @var{x} @var{list} eqv?)}, respectively.
+@end deffn
+
+
+@deffn procedure delete-member-procedure deletor predicate
+@findex list-deletor
+@findex list-deletor!
+@findex delv
+@findex delete!
+Returns a deletion procedure similar to @code{delv} or @code{delete!}.
+@var{Deletor} should be one of the procedures @code{list-deletor} or
+@code{list-deletor!}.  @var{Predicate} must be an equivalence predicate.
+The returned procedure accepts exactly two arguments: first, an object
+to be deleted, and second, a list of objects from which it is to be
+deleted.  If @var{deletor} is @code{list-deletor}, the procedure
+returns a newly allocated copy of the given list in which all entries
+equal to the given object have been removed.  If @var{deletor} is
+@code{list-deletor!}, the procedure returns a list consisting of the
+top-level elements of the given list with all entries equal to the given
+object removed; the given list is destructively modified to produce the
+result.  In either case @var{predicate} is used to compare the given
+object to the elements of the given list.
+
+Here are some examples that demonstrate how
+@code{delete-member-procedure} could have been used to implement
+@code{delv} and @code{delete!}:
+
+@example
+@group
+(define delv
+  (delete-member-procedure list-deletor eqv?))
+(define delete!
+  (delete-member-procedure list-deletor! equal?))
+@end group
+@end example
+@end deffn
+
+@deffn procedure list-deletor predicate
+@deffnx procedure list-deletor! predicate
+These procedures each return a procedure that deletes elements from
+lists.  @var{Predicate} must be a procedure of one argument.  The
+returned procedure accepts exactly one argument, which must be a proper
+list, and applies @var{predicate} to each of the elements of the
+argument, deleting those for which it is true.
+
+The procedure returned by @code{list-deletor} deletes elements
+non-destructively, by returning a newly allocated copy of the argument
+with the appropriate elements removed.  The procedure returned by
+@code{list-deletor!} performs a destructive deletion.
+@end deffn
+
+@node Searching Lists, Mapping of Lists, Filtering Lists, Lists
+@section Searching Lists
+@cindex searching, of list
+
+@deffn {SRFI 1 procedure} find predicate list
+Returns the first element in @var{list} for which @var{predicate} is
+true; returns @code{#f} if it doesn't find such an element.
+@var{Predicate} must be a procedure of one argument.
+
+@example
+(find even? '(3 1 4 1 5 9)) => 4
+@end example
+
+Note that @code{find} has an ambiguity in its lookup semantics---if
+@code{find} returns @code{#f}, you cannot tell (in general) if it
+found a @code{#f} element that satisfied @var{predicate}, or if it did
+not find any element at all.  In many situations, this ambiguity
+cannot arise---either the list being searched is known not to contain
+any @code{#f} elements, or the list is guaranteed to have an element
+satisfying @var{predicate}.  However, in cases where this ambiguity
+can arise, you should use @code{find-tail} instead of
+@code{find}---@code{find-tail} has no such ambiguity:
+
+@example
+@group
+(cond ((find-tail pred lis)
+        => (lambda (pair) @dots{})) ; Handle (CAR PAIR)
+      (else @dots{})) ; Search failed.
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} find-tail predicate list
+Returns the first pair of @var{list} whose car satisfies
+@var{predicate}; returns @code{#f} if there's no such pair.
+@code{find-tail} can be viewed as a general-predicate variant of
+@var{memv}.
+@end deffn
+
+
+@deffn {standard procedure} memq object list
+@deffnx {standard procedure} memv object list
+@deffnx {standard procedure} member object list [compare]
+These procedures return the first pair of @var{list} whose car is
+@var{object}; the returned pair is always one from which @var{list} is
+composed.  If @var{object} does not occur in @var{list}, @code{#f}
+(n.b.: not the empty list) is returned.  @code{memq} uses @code{eq?}
+to compare @var{object} with the elements of @var{list}, while
+@code{memv} uses @code{eqv?} and @code{member} uses @var{compare}, or
+@code{equal?} if @var{compare} is not supplied.@footnote{Although they
+are often used as predicates, @code{memq}, @code{memv}, and
+@code{member} do not have question marks in their names because they
+return useful values rather than just @code{#t} or @code{#f}.}
+
+@example
+@group
+(memq 'a '(a b c))                      @result{} (a b c)
+(memq 'b '(a b c))                      @result{} (b c)
+(memq 'a '(b c d))                      @result{} #f
+(memq (list 'a) '(b (a) c))             @result{} #f
+(member (list 'a) '(b (a) c))           @result{} ((a) c)
+(memq 101 '(100 101 102))               @result{} @r{unspecified}
+(memv 101 '(100 101 102))               @result{} (101 102)
+@end group
+@end example
+@end deffn
+
+
+@deffn procedure member-procedure predicate
+Returns a procedure similar to @code{memq}, except that @var{predicate},
+which must be an equivalence predicate, is used instead of @code{eq?}.
+This could be used to define @code{memv} as follows:
+
+@example
+(define memv (member-procedure eqv?))
+@end example
+@end deffn
+
+
+@need 1000
+@node Mapping of Lists, Folding of Lists, Searching Lists, Lists
+@section Mapping of Lists
+@cindex mapping, of list
+
+@deffn {standard procedure} map procedure list list @dots{}
+It is an error if @var{procedure} does not accept as many arguments as
+there are @var{list}s and return a single value.
+
+The @code{map} procedure applies @var{procedure} element-wise to the
+elements of the @var{list}s and returns a list of the results, in
+order.  If more than one @var{list} is given and not all lists are the
+same length, @code{map} terminates when the shortest list runs out.
+The @var{list}s can be circular, but it is an error if all of them
+are circular.  It is an error for @var{procedure} to mutate any of the
+lists.  The dynamic order in which @var{procedure} is applied to the
+elements of the @var{list}s is unspecified.  If multiple returns occur
+from @code{map}, the values returned by earlier returns are not
+mutated.
+
+@example
+@group
+(map cadr '((a b) (d e) (g h)))         @result{} (b e h)
+(map (lambda (n) (expt n n)) '(1 2 3 4 5))
+                                        @result{} (1 4 27 256 3125)
+(map + '(1 2 3) '(4 5 6 7))             @result{} (5 7 9)
+(let ((count 0))
+  (map (lambda (ignored)
+         (set! count (+ count 1))
+         count)
+       '(a b)))                         @result{} (1 2) @r{or} (2 1)
+@end group
+@end example
+@end deffn
+
+@deffn {obsolete procedure} map* knil proc list@sub{1} list@sub{2} @dots{}
+Deprecated, use @code{fold-right} instead.  Equivalent to
+
+@example
+@group
+(fold-right (lambda (e@sub{1} e@sub{2} @dots{} acc)
+              (cons* (@var{proc} e@sub{1})
+                     (@var{proc} e@sub{2})
+                     @dots{}
+                     acc))
+            @var{knil}
+            @var{list@sub{1}}
+            @var{list@sub{2}}
+            @dots{})
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} append-map procedure list list @dots{}
+Similar to @code{map} except that the results of applying
+@var{procedure} to the elements of @var{list}s are concatenated
+together by @code{append} rather than by @code{cons}.  The following
+are equivalent, except that the former is more efficient:
+
+@example
+@group
+(append-map @var{procedure} @var{list@sub{1}} @var{list@sub{2}} @dots{})
+(apply append (map @var{procedure} @var{list@sub{1}} @var{list@sub{2}} @dots{}))
+@end group
+@end example
+@end deffn
+
+
+@deffn {obsolete procedure} append-map* knil proc list@sub{1} list@sub{2} @dots{}
+Deprecated, use @code{fold-right} instead.  Equivalent to
+
+@example
+@group
+(fold-right (lambda (e@sub{1} e@sub{2} @dots{} acc)
+              (append (@var{proc} e@sub{1})
+                      (@var{proc} e@sub{2})
+                      @dots{}
+                      acc))
+            @var{knil}
+            @var{list@sub{1}}
+            @var{list@sub{2}}
+            @dots{})
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} append-map! proc list list @dots{}
+Similar to @code{map} except that the results of applying @var{proc}
+to the elements of @var{list}s are concatenated together by
+@code{append!} rather than by @code{cons}.  The following are
+equivalent, except that the former is more efficient:
+
+@example
+@group
+(append-map! @var{proc} @var{list} @var{list} @dots{})
+(apply append! (map @var{proc} @var{list} @var{list} @dots{}))
+@end group
+@end example
+@end deffn
+
+
+@deffn {obsolete procedure} append-map*! knil proc list@sub{1} list@sub{2} @dots{}
+Deprecated, use @code{fold-right} instead.  Equivalent to
+
+@example
+@group
+(fold-right (lambda (e@sub{1} e@sub{2} @dots{} acc)
+              (append! (@var{proc} e@sub{1})
+                       (@var{proc} e@sub{2})
+                       @dots{}
+                       acc))
+            @var{knil}
+            @var{list@sub{1}}
+            @var{list@sub{2}}
+            @dots{})
+@end group
+@end example
+@end deffn
+
+
+@deffn {standard procedure} for-each procedure list list @dots{}
+It is an error if @var{procedure} does not accept as many arguments as
+there are @var{list}s.
+
+The arguments to @code{for-each} are like the arguments to @code{map},
+but @code{for-each} calls @var{procedure} for its side effects rather
+than for its values.  Unlike @code{map}, @code{for-each} is guaranteed
+to call @var{procedure} on the elements of the @var{list}s in order
+from the first element(s) to the last, and the value returned by
+@code{for-each} is unspecified.  If more than one @var{list} is given
+and not all lists have the same length, @code{for-each} terminates
+when the shortest @var{list} runs out.  The @var{list}s can be
+circular, but it is an error if all of them are circular.
+
+It is an error for @var{procedure} to mutate any of the lists.
+
+@example
+@group
+(let ((v (make-vector 5)))
+  (for-each (lambda (i)
+              (vector-set! v i (* i i)))
+            '(0 1 2 3 4))
+  v)                            @result{} #(0 1 4 9 16)
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} any predicate list list @dots{}
+Applies @var{predicate} across the @var{list}s, returning true if
+@var{predicate} returns true on any application.
+
+If there are @math{n} list arguments @var{list@sub{1}} @dots{}  @var{list@sub{n}},
+then @var{predicate} must be a procedure taking @math{n} arguments and
+returning a boolean result.
+
+@code{any} applies @var{predicate} to the first elements of the
+@var{list} parameters.  If this application returns a true value,
+@code{any} immediately returns that value.  Otherwise, it iterates,
+applying @var{predicate} to the second elements of the @var{list}
+parameters, then the third, and so forth.  The iteration stops when a
+true value is produced or one of the lists runs out of values; in the
+latter case, @code{any} returns @code{#f}.  The application of
+@var{predicate} to the last element of the @var{list}s is a tail call.
+
+Note the difference between @code{find} and @code{any}---@code{find}
+returns the element that satisfied the predicate; @code{any} returns
+the true value that the @var{predicate} produced.
+
+Like @code{every}, @code{any}'s name does not end with a question
+mark---this is to indicate that it does not return a simple boolean
+(@code{#t} or @code{#f}), but a general value.
+
+@example
+@group
+(any integer? '(a 3 b 2.7))   => #t
+(any integer? '(a 3.1 b 2.7)) => #f
+(any < '(3 1 4 1 5)
+       '(2 7 1 8 2)) => #t
+@end group
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} every predicate list list @dots{}
+Applies @var{predicate} across the @var{list}s, returning true if
+@var{predicate} returns true on every application.
+
+If there are @math{n} list arguments @var{list@sub{1}} @dots{}  @var{list@sub{n}},
+then @var{predicate} must be a procedure taking @math{n} arguments and
+returning a boolean result.
+
+@code{every} applies @var{predicate} to the first elements of the
+@var{list} parameters.  If this application returns false,
+@code{every} immediately returns false.  Otherwise, it iterates,
+applying @var{predicate} to the second elements of the @var{list}
+parameters, then the third, and so forth.  The iteration stops when a
+false value is produced or one of the @var{list}s runs out of values.
+In the latter case, @code{every} returns the true value produced by
+its final application of @var{predicate}.  The application of
+@var{predicate} to the last element of the @var{list}s is a tail call.
+
+If one of the @var{list}s has no elements, @code{every} simply returns @code{#t}.
+
+Like @code{any}, @code{every}'s name does not end with a question
+mark---this is to indicate that it does not return a simple boolean
+(@code{#t} or @code{#f}), but a general value.
+@end deffn
+
+
+@node Folding of Lists, Miscellaneous List Operations, Mapping of Lists, Lists
+@section Folding of Lists
+@cindex folding, of list
+
+@deffn {SRFI 1 procedure} fold kons knil clist@sub{1} clist@sub{2} @dots{}
+The fundamental list iterator.
+
+First, consider the single list-parameter case.  If @var{clist@sub{1}} =
+@code{(@var{e@sub{1}} @var{e@sub{2}} @dots{} @var{e@sub{n}})}, then this procedure returns
+@example
+(@var{kons} @var{e@sub{n}} @dots{} (@var{kons} @var{e@sub{2}} (@var{kons} @var{e@sub{1}} @var{knil})) @dots{})
+@end example
+
+That is, it obeys the (tail) recursion
+
+@example
+@group
+(fold @var{kons} @var{knil} @var{lis}) = (fold @var{kons} (@var{kons} (car @var{lis}) @var{knil}) (cdr @var{lis}))
+(fold @var{kons} @var{knil} '()) = @var{knil}
+@end group
+@end example
+
+Examples:
+
+@example
+(fold + 0 lis)                  ; Add up the elements of LIS.
+
+(fold cons '() lis)             ; Reverse LIS.
+
+(fold cons tail rev-head)       ; See APPEND-REVERSE.
+
+;; How many symbols in LIS?
+(fold (lambda (x count) (if (symbol? x) (+ count 1) count))
+      0
+      lis)
+
+;; Length of the longest string in LIS:
+(fold (lambda (s max-len) (max max-len (string-length s)))
+      0
+      lis)
+@end example
+      
+If @var{n} list arguments are provided, then the @var{kons} procedure must
+take @var{n}+1 parameters: one element from each list, and the "seed" or
+fold state, which is initially @var{knil}. The fold operation terminates
+when the shortest list runs out of values:
+
+@example
+(fold cons* '() '(a b c) '(1 2 3 4 5)) => (c 3 b 2 a 1)
+@end example
+
+At least one of the list arguments must be finite.
+@end deffn
+
+
+@deffn {SRFI 1 procedure} fold-right kons knil clist@sub{1} clist@sub{2} @dots{}
+The fundamental list recursion operator.
+
+First, consider the single list-parameter case.  If @var{clist@sub{1}} =
+@code{(@var{e@sub{1}} @var{e@sub{2}} @dots{} @var{e@sub{n}})}, then this procedure
+returns
+
+@example
+(@var{kons} @var{e@sub{1}} (@var{kons} @var{e@sub{2}} @dots{} (@var{kons} @var{e@sub{n}} @var{knil})))
+@end example
+
+That is, it obeys the recursion
+
+@example
+@group
+(fold-right @var{kons} @var{knil} @var{lis}) = (@var{kons} (car @var{lis}) (fold-right @var{kons} @var{knil} (cdr @var{lis})))
+(fold-right @var{kons} @var{knil} '()) = @var{knil}
+@end group
+@end example
+
+Examples:
+
+@example
+(fold-right cons '() lis)               ; Copy LIS.
+
+;; Filter the even numbers out of LIS.
+(fold-right (lambda (x l) (if (even? x) (cons x l) l)) '() lis))
+@end example
+
+If @var{n} list arguments are provided, then the @var{kons} function
+must take @var{n}+1 parameters: one element from each list, and the
+"seed" or fold state, which is initially @var{knil}.  The fold
+operation terminates when the shortest list runs out of values:
+@example
+(fold-right cons* '() '(a b c) '(1 2 3 4 5)) => (a 1 b 2 c 3)
+@end example
+
+At least one of the list arguments must be finite. 
+@end deffn
+
+
+@deffn {obsolete procedure} fold-left proc knil list
+Deprecated, use @code{fold} instead.  Equivalent to
+
+@example
+(fold (lambda (acc elt) (@var{proc} elt acc)) @var{knil} @var{list})
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} reduce f ridentity list
+@code{reduce} is a variant of @code{fold}.
+
+@var{ridentity} should be a "right identity" of the procedure
+@var{f}---that is, for any value @var{x} acceptable to @var{f},
+@display
+@code{(@var{f} @var{x} @var{ridentity})} = @var{x}
+@end display
+
+@code{reduce} has the following definition:
+@display
+If @var{list} = @code{()}, return @var{ridentity};
+Otherwise, return @code{(@var{fold} @var{f} (car @var{list}) (cdr @var{list}))}.
+@end display
+...in other words, we compute @code{(fold @var{f} @var{ridentity} @var{list})}.
+
+Note that @var{ridentity} is used only in the empty-list case.  You
+typically use @code{reduce} when applying @var{f} is expensive and
+you'd like to avoid the extra application incurred when @code{fold}
+applies @var{f} to the head of list and the identity value,
+redundantly producing the same value passed in to @var{f}.  For
+example, if @var{f} involves searching a file directory or performing
+a database query, this can be significant.  In general, however,
+@code{fold} is useful in many contexts where @code{reduce} is not
+(consider the examples given in the @code{fold} definition---only one
+of the five @code{fold}s uses a function with a right identity. The
+other four may not be performed with @code{reduce}).
+
+@example
+;; Take the max of a list of non-negative integers.
+(reduce max 0 nums) ; i.e., (apply max 0 nums)
+@end example
+@end deffn
+
+
+@deffn {SRFI 1 procedure} reduce-right kons knil list
+@code{reduce-right} is the @code{fold-right} variant of @code{reduce}.
+It obeys the following definition:
+@display
+@code{(reduce-right @var{f} @var{ridentity} '())} = @var{ridentity}
+@code{(reduce-right @var{f} @var{ridentity} '(@var{e@sub{1}}))} = @code{(@var{f} @var{e@sub{1}} @var{ridentity})} = @var{e@sub{1}}
+@code{(reduce-right @var{f} @var{ridentity} '(@var{e@sub{1}} @var{e@sub{2}} @dots{}))} =
+    @code{(@var{f} @var{e@sub{1}} (reduce @var{f} @var{ridentity} '(@var{e@sub{2}} @dots{})))}
+@end display
+...in other words, we compute @code{(fold-right @var{f} @var{ridentity} @var{list})}.
+
+@example
+;; Append a bunch of lists together.
+;; I.e., (apply append list-of-lists)
+(reduce-right append '() list-of-lists)
+@end example
+@end deffn
+
+
+@deffn {obsolete procedure} reduce-left f ridentity list
+Deprecated, use @code{reduce} instead.  Equivalent to
+
+@example
+(reduce (lambda (acc elt) (@var{f} elt acc)) @var{ridentity} @var{list})
+@end example
+@end deffn
+
+
+@node Miscellaneous List Operations,  , Folding of Lists, Lists
+@section Miscellaneous List Operations
+
+@deffn {SRFI 1 procedure} circular-list object @dots{}
+@deffnx procedure make-circular-list k [element]
+@cindex circular list
+@cindex construction, of circular list
+@findex list
+@code{circular-list} returns a circular list containing the given
+@var{object}s.  @code{make-circular-list} returns a circular list of
+length @var{k}; if @var{element} is given, the returned list is filled
+with it, otherwise the elements are unspecified.
+
+This procedure is like @code{list} except that the returned list is
+circular.  @code{circular-list} could have been defined like this:
+
+@example
+@group
+(define (circular-list . objects)
+  (append! objects objects))
+@end group
+@end example
+
+@code{circular-list} is compatible with @usrfi{1}, but extended
+so that it can be called with no arguments.
+@end deffn
+
+@deffn {standard procedure} reverse list
+@cindex reversal, of list
+Returns a newly allocated list consisting of the top-level elements of
+@var{list} in reverse order.
+
+@example
+@group
+(reverse '(a b c))                  @result{} (c b a)
+(reverse '(a (b c) d (e (f))))      @result{} ((e (f)) d (b c) a)
+@end group
+@end example
+@end deffn
+
+@deffn {SRFI 1 procedure} reverse! list
+Returns a list consisting of the top-level elements of @var{list} in
+reverse order.  @code{reverse!} is like @code{reverse}, except that it
+destructively modifies @var{list}.  Because the result may not be
+@code{eqv?} to @var{list}, it is desirable to do something like
+@code{(set! x (reverse! x))}.
+@end deffn
+
+
+@deffn procedure sort sequence procedure [key]
+@deffnx procedure merge-sort sequence procedure [key]
+@deffnx procedure quick-sort sequence procedure [key]
+@cindex total ordering (defn)
+@var{Sequence} must be either a list or a vector.
+@var{Key}, if specified, must be a procedure of one argument that maps
+an element of @var{sequence} to a key fit for comparison by
+@var{procedure}; by default, @var{key} is the identity.
+@var{Procedure} must be a procedure of two arguments that defines a
+@dfn{total ordering} on the keys of @var{sequence}.
+In other words, if @var{x} and @var{y} are two distinct elements of
+@var{sequence}, then it must be the case that
+
+@example
+@group
+(and (@var{procedure} (@var{key} @var{x}) (@var{key} @var{y}))
+     (@var{procedure} (@var{key} @var{y}) (@var{key} @var{x})))
+     @result{} #f
+@end group
+@end example
+
+If @var{sequence} is a list (vector), @code{sort} returns a newly
+allocated list (vector) whose elements are those of @var{sequence},
+except that they are rearranged to be sorted in the order defined by
+@var{procedure} and @var{key}.
+So, for example, if the elements of @var{sequence} are numbers, and
+@var{procedure} is @code{<}, then the resulting elements are sorted in
+monotonically nondecreasing order.
+Likewise, if @var{procedure} is @code{>}, the resulting elements are
+sorted in monotonically nonincreasing order.
+To be precise, if @var{x} and @var{y} are any two adjacent elements in
+the result, where @var{x} precedes @var{y}, it is the case that
+
+@example
+@group
+(@var{procedure} (@var{key} @var{y}) (@var{key} @var{x}))
+     @result{} #f
+@end group
+@end example
+
+Two sorting algorithms are implemented: @code{merge-sort} and
+@code{quick-sort}.
+The procedure @code{sort} is an alias for @code{merge-sort}.
+@code{Merge-sort} is stable, meaning that it preserves the order in
+@var{sequence} of elements which are equivalent under @var{procedure}
+and @var{key}; @code{quick-sort} is not stable, so it does not
+guarantee this.
+
+See also the definition of @code{sort!}.
+
+@example
+@group
+(merge-sort '((2 . foo) (2 . bar) (1 . baz) (3 . quux)) < car)
+@result{} ((1 . baz) (2 . foo) (2 . bar) (3 . quux))
+
+(quick-sort '((2 . foo) (2 . bar) (1 . baz) (3 . quux)) < car)
+@result{} ((1 . baz) (2 . bar) (2 . foo) (3 . quux))
+@end group
+@end example
+@end deffn

@@ -1,0 +1,47 @@
+The EDWIN option.
+
+This option extends Scheme with a source code (text) editor.  It is
+built in the GNU standard way:
+
+    ./configure ...
+    make all
+    make check
+    make install
+
+The last command will attempt to create a subdirectory in the first
+directory on Scheme's library path.  If that directory is not writable
+by you, super-user privileges may be required.
+
+You can put a writable directory at the front of your Scheme's library
+path by setting the MITSCHEME_LIBRARY_PATH environment variable and
+creating a short optiondb file.
+
+    mkdir ~/.mit-scheme-x86-64
+    echo "(further-load-options #t)" > ~/.mit-scheme-x86-64/optiondb.scm
+    export MITSCHEME_LIBRARY_PATH=\
+	~/.mit-scheme-x86-64:/usr/local/lib/mit-scheme-x86-64
+    make install
+
+To use: call the global `edit' procedure, or specify --edit on the
+Scheme command line.  For more information see the MIT/GNU Scheme
+User's Manual.
+
+Notes on the Edwin sources:
+
+If you want to add a new file to the source tree, you need to 
+modify the following three files:
+
+	decls.scm
+	ed-ffi.scm
+	edwin.pkg
+
+If the file should be loaded into the default edwin band, you must also
+edit the file:
+
+	edwin.ldr
+
+If the file is to be autoloaded, you must edit the file:
+
+	loadef.scm
+
+So, in either case, you have to change four files.

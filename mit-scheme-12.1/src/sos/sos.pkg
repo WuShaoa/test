@@ -1,0 +1,263 @@
+#| -*-Scheme-*-
+
+Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994,
+    1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
+    2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
+    2017, 2018, 2019, 2020, 2021, 2022 Massachusetts Institute of
+    Technology
+
+This file is part of MIT/GNU Scheme.
+
+MIT/GNU Scheme is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+
+MIT/GNU Scheme is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with MIT/GNU Scheme; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
+USA.
+
+|#
+
+;;;; Packaging for Scheme Object System
+
+(global-definitions "../runtime/runtime")
+
+(define-package (sos)
+  (parent (runtime)))
+
+(define-package (sos generic-procedure eqht)
+  (files "geneqht")
+  (parent (sos))
+  (export (sos generic-procedure)
+	  eqht/for-each
+	  eqht/get
+	  eqht/put!
+	  make-eqht))
+
+(define-package (sos generic-procedure)
+  (files "generic")
+  (parent (sos))
+  (export ()
+	  generic-procedure-applicable?
+	  generic-procedure-arity
+	  generic-procedure-arity-max
+	  generic-procedure-arity-min
+	  generic-procedure-name
+	  generic-procedure?
+	  guarantee-generic-procedure
+	  make-generic-procedure
+	  purge-generic-procedure-cache)
+  (export (sos)
+	  condition-type:no-applicable-methods
+	  error:no-applicable-methods)
+  (export (sos generic-procedure multiplexer)
+	  generic-procedure-generator
+	  set-generic-procedure-generator!)
+  (import (runtime tagged-dispatch)
+	  fill-cache
+	  new-cache
+	  probe-cache
+	  probe-cache-1
+	  probe-cache-2
+	  probe-cache-3
+	  probe-cache-4
+	  purge-cache-entries))
+
+(define-package (sos generic-procedure multiplexer)
+  (files "genmult")
+  (parent (sos))
+  (export ()
+	  add-generic-procedure-generator
+	  condition-type:extra-applicable-methods
+	  error:extra-applicable-methods
+	  generic-procedure-default-generator
+	  generic-procedure-generator-list
+	  remove-generic-procedure-generator
+	  remove-generic-procedure-generators
+	  set-generic-procedure-default-generator!))
+
+(define-package (sos tagged-vector)
+  (files "tvector")
+  (parent (sos))
+  (export (sos)
+	  guarantee-tagged-vector
+	  make-tagged-vector
+	  record-slot-uninitialized
+	  set-tagged-vector-element!
+	  set-tagged-vector-tag!
+	  tagged-vector
+	  tagged-vector-element
+	  tagged-vector-element-initialized?
+	  tagged-vector-length
+	  tagged-vector-tag
+	  tagged-vector?))
+
+(define-package (sos record-slot-access)
+  (files "recslot")
+  (parent (sos))
+  (export (sos)
+	  %record-accessor
+	  %record-accessor-generator
+	  %record-initpred
+	  %record-initpred-generator
+	  %record-modifier
+	  %record-modifier-generator
+	  %record-slot-index
+	  %record-slot-name
+	  %record-slot-names))
+
+(define-package (sos slot)
+  (files "slot")
+  (parent (sos))
+  (export ()
+	  set-slot-value!
+	  slot-accessor
+	  slot-accessor-method
+	  slot-class
+	  slot-descriptor?
+	  slot-index
+	  slot-initial-value
+	  slot-initial-value?
+	  slot-initialized?
+	  slot-initializer
+	  slot-initpred
+	  slot-initpred-method
+	  slot-modifier
+	  slot-modifier-method
+	  slot-name
+	  slot-properties
+	  slot-property
+	  slot-value)
+  (export (sos class)
+	  canonicalize-slot-argument
+	  compute-slot-descriptor
+	  install-slot-accessor-methods))
+
+(define-package (sos class)
+  (files "class")
+  (parent (sos))
+  (export ()
+	  <bignum>
+	  <boolean>
+	  <char>
+	  <class>
+	  <complex>
+	  <entity>
+	  <exact-complex>
+	  <exact-integer>
+	  <exact-rational>
+	  <exact-real>
+	  <exact>
+	  <fixnum>
+	  <flonum-vector>
+	  <flonum>
+	  <generic-procedure>
+	  <inexact-complex>
+	  <inexact-integer>
+	  <inexact-rational>
+	  <inexact-real>
+	  <inexact>
+	  <instance>
+	  <integer>
+	  <number>
+	  <object>
+	  <pair>
+	  <procedure>
+	  <rational>
+	  <ratnum>
+	  <real>
+	  <recnum>
+	  <record>
+	  <string>
+	  <symbol>
+	  <vector>
+	  class->dispatch-tag
+	  class-direct-slot-names
+	  class-direct-superclasses
+	  class-name
+	  class-precedence-list
+	  class-slot
+	  class-slots
+	  class?
+	  dispatch-tag->class
+	  make-class
+	  make-trivial-subclass
+	  object-class
+	  record-class
+	  record-type-class
+	  subclass?)
+  (export (sos)
+	  class-tag?)
+  (import (runtime microcode-tables)
+	  microcode-type/code->name
+	  microcode-type/name->code))
+
+(define-package (sos instance)
+  (files "instance")
+  (parent (sos))
+  (export ()
+	  initialize-instance
+	  instance-class
+	  instance-constructor
+	  instance-of?
+	  instance-predicate
+	  instance?))
+
+(define-package (sos method)
+  (files "method")
+  (parent (sos))
+  (export ()
+	  <chained-method>
+	  <computed-emp>
+	  <computed-method>
+	  <method>
+	  add-method
+	  add-methods
+	  chained-method?
+	  compute-effective-method-procedure
+	  compute-method
+	  computed-emp-key
+	  computed-emp?
+	  computed-method?
+	  delete-method
+	  generic-procedure-methods
+	  make-chained-method
+	  make-computed-emp
+	  make-computed-method
+	  make-method
+	  method-applicable?
+	  method-procedure
+	  method-specializers
+	  method?
+	  sort-methods
+	  specializer-classes
+	  specializer=?
+	  specializer?
+	  specializers=?
+	  specializers?
+	  union-specializer
+	  union-specializer?))
+
+(define-package (sos printer)
+  (files "printer")
+  (parent (sos))
+  (export ()
+	  write-instance
+	  write-instance-helper))
+
+(define-package (sos macros)
+  (files "macros")
+  (parent (sos))
+  (export ()
+	  define-class
+	  define-computed-emp
+	  define-computed-method
+	  define-generic
+	  define-method))

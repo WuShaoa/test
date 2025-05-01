@@ -1,0 +1,3727 @@
+@node Numbers, Characters, Equivalence Predicates, Top
+@chapter Numbers
+@cindex number
+
+(This section is largely taken from the @cite{Revised^4 Report on the
+Algorithmic Language Scheme}.)
+
+Numerical computation has traditionally been neglected by the Lisp
+community.  Until Common Lisp there was no carefully thought out
+strategy for organizing numerical computation, and with the exception of
+the MacLisp system little effort was made to execute numerical code
+efficiently.  This report recognizes the excellent work of the Common
+Lisp committee and accepts many of their recommendations.  In some ways
+this report simplifies and generalizes their proposals in a manner
+consistent with the purposes of Scheme.
+
+It is important to distinguish between the mathematical numbers, the
+Scheme numbers that attempt to model them, the machine representations
+used to implement the Scheme numbers, and notations used to write
+numbers.  This report uses the types @emph{number}, @emph{complex},
+@emph{real}, @emph{rational}, and @emph{integer} to refer to both
+mathematical numbers and Scheme numbers.  Machine representations such
+as fixed point and floating point are referred to by names such as
+@emph{fixnum} and @emph{flonum}.
+
+@menu
+* Numerical types::
+* Exactness::
+* Implementation restrictions::
+* Syntax of numerical constants::
+* Numerical operations::
+* Numerical input and output::
+* Bit operations::
+* Fixnum and Flonum Operations::
+* Random Number Generation::
+@end menu
+
+@node Numerical types, Exactness, Numbers, Numbers
+@section Numerical types
+@cindex numerical types
+
+Mathematically, numbers may be arranged into a tower of subtypes in
+which each level is a subset of the level above it:
+
+@display
+@group
+number
+complex
+real
+rational
+integer
+@end group
+@end display
+
+For example, 3 is an integer.  Therefore 3 is also a rational, a real,
+and a complex.  The same is true of the Scheme numbers that model 3.
+For Scheme numbers, these types are defined by the predicates
+@code{number?}, @code{complex?}, @code{real?}, @code{rational?}, and
+@code{integer?}.
+
+There is no simple relationship between a number's type and its
+representation inside a computer.  Although most implementations of
+Scheme will offer at least two different representations of 3, these
+different representations denote the same integer.
+
+Scheme's numerical operations treat numbers as abstract data, as
+independent of their representation as possible.  Although an
+implementation of Scheme may use fixnum, flonum, and perhaps other
+representations for numbers, this should not be apparent to a casual
+programmer writing simple programs.
+
+It is necessary, however, to distinguish between numbers that are
+represented exactly and those that may not be.  For example, indexes
+into data structures must be known exactly, as must some polynomial
+coefficients in a symbolic algebra system.  On the other hand, the
+results of measurements are inherently inexact, and irrational numbers
+may be approximated by rational and therefore inexact approximations.
+In order to catch uses of inexact numbers where exact numbers are
+required, Scheme explicitly distinguishes exact from inexact numbers.
+This distinction is orthogonal to the dimension of type.
+
+@node Exactness, Implementation restrictions, Numerical types, Numbers
+@section Exactness
+@cindex exactness
+
+Scheme numbers are either @emph{exact} or @emph{inexact}.  A number is
+exact if it was written as an exact constant or was derived from exact
+numbers using only exact operations.  A number is inexact if it was
+written as an inexact constant, if it was derived using inexact
+ingredients, or if it was derived using inexact operations. Thus
+inexactness is a contagious property of a number.
+
+If two implementations produce exact results for a computation that did
+not involve inexact intermediate results, the two ultimate results will
+be mathematically equivalent.  This is generally not true of
+computations involving inexact numbers since approximate methods such as
+floating point arithmetic may be used, but it is the duty of each
+implementation to make the result as close as practical to the
+mathematically ideal result.
+
+@findex +
+Rational operations such as @code{+} should always produce exact results
+when given exact arguments.  If the operation is unable to produce an
+exact result, then it may either report the violation of an
+implementation restriction or it may silently coerce its result to an
+inexact value.  @xref{Implementation restrictions}.
+
+@findex exact
+With the exception of @code{exact}, the operations described in
+this section must generally return inexact results when given any
+inexact arguments.  An operation may, however, return an exact result if
+it can prove that the value of the result is unaffected by the
+inexactness of its arguments.  For example, multiplication of any number
+by an exact zero may produce an exact zero result, even if the other
+argument is inexact.
+
+@node Implementation restrictions, Syntax of numerical constants, Exactness, Numbers
+@section Implementation restrictions
+@cindex implementation restriction
+
+Implementations of Scheme are not required to implement the whole tower
+of subtypes (@pxref{Numerical types}), but they must implement a
+coherent subset consistent with both the purposes of the implementation
+and the spirit of the Scheme language.  For example, an implementation
+in which all numbers are real may still be quite useful.@footnote{MIT/GNU
+Scheme implements the whole tower of numerical types.  It has
+unlimited-precision exact integers and exact rationals.  Flonums are
+used to implement all inexact reals; on machines that support @sc{ieee}
+floating-point arithmetic these are double-precision floating-point
+numbers.}
+
+Implementations may also support only a limited range of numbers of any
+type, subject to the requirements of this section.  The supported range
+for exact numbers of any type may be different from the supported range
+for inexact numbers of that type.  For example, an implementation that
+uses flonums to represent all its inexact real numbers may support a
+practically unbounded range of exact integers and rationals while
+limiting the range of inexact reals (and therefore the range of inexact
+integers and rationals) to the dynamic range of the flonum format.
+Furthermore the gaps between the representable inexact integers and
+rationals are likely to be very large in such an implementation as the
+limits of this range are approached.
+
+@findex length
+@findex vector-length
+@findex string-length
+An implementation of Scheme must support exact integers throughout the
+range of numbers that may be used for indexes of lists, vectors, and
+strings or that may result from computing the length of a list, vector,
+or string.  The @code{length}, @code{vector-length}, and
+@code{string-length} procedures must return an exact integer, and it is
+an error to use anything but an exact integer as an index.  Furthermore
+any integer constant within the index range, if expressed by an exact
+integer syntax, will indeed be read as an exact integer, regardless of
+any implementation restrictions that may apply outside this range.
+Finally, the procedures listed below will always return an exact integer
+result provided all their arguments are exact integers and the
+mathematically expected result is representable as an exact integer
+within the implementation:
+
+@example
+@group
+*                gcd                modulo
++                imag-part          numerator
+-                exact              quotient
+abs              lcm                rationalize
+angle            magnitude          real-part
+ceiling          make-polar         remainder
+denominator      make-rectangular   round
+expt             max                truncate
+floor            min
+@end group
+@end example
+
+@findex /
+Implementations are encouraged, but not required, to support exact
+integers and exact rationals of practically unlimited size and
+precision, and to implement the above procedures and the @code{/}
+procedure in such a way that they always return exact results when given
+exact arguments.  If one of these procedures is unable to deliver an
+exact result when given exact arguments, then it may either report a
+violation of an implementation restriction or it may silently coerce its
+result to an inexact number.  Such a coercion may cause an error
+later.
+
+An implementation may use floating point and other approximate
+representation strategies for inexact numbers.  This report recommends,
+but does not require, that the @sc{ieee} 32-bit and 64-bit floating
+point standards be followed by implementations that use flonum
+representations, and that implementations using other representations
+should match or exceed the precision achievable using these floating
+point standards.
+
+@findex sqrt
+In particular, implementations that use flonum representations must
+follow these rules: A flonum result must be represented with at least as
+much precision as is used to express any of the inexact arguments to
+that operation.  It is desirable (but not required) for potentially
+inexact operations such as @code{sqrt}, when applied to exact arguments,
+to produce exact answers whenever possible (for example the square root
+of an exact 4 ought to be an exact 2).  If, however, an exact number is
+operated upon so as to produce an inexact result (as by @code{sqrt}),
+and if the result is represented as a flonum, then the most precise
+flonum format available must be used; but if the result is represented
+in some other way then the representation must have at least as much
+precision as the most precise flonum format available.
+
+Although Scheme allows a variety of written notations for numbers, any
+particular implementation may support only some of them.@footnote{MIT/GNU
+Scheme implements all of the written notations for numbers.} For
+example, an implementation in which all numbers are real need not
+support the rectangular and polar notations for complex numbers.  If an
+implementation encounters an exact numerical constant that it cannot
+represent as an exact number, then it may either report a violation of
+an implementation restriction or it may silently represent the constant
+by an inexact number.
+
+@node Syntax of numerical constants, Numerical operations, Implementation restrictions, Numbers
+@section Syntax of numerical constants
+@cindex number, external representation
+@cindex external representation, for number
+
+@findex #b
+@findex #o
+@findex #d
+@findex #x
+@cindex #b as external representation
+@cindex #o as external representation
+@cindex #d as external representation
+@cindex #x as external representation
+A number may be written in binary, octal, decimal, or hexadecimal by the
+use of a radix prefix.  The radix prefixes are @code{#b} (binary),
+@code{#o} (octal), @code{#d} (decimal), and @code{#x} (hexadecimal).
+With no radix prefix, a number is assumed to be expressed in
+decimal.
+
+@findex #e
+@findex #i
+@findex #
+@cindex #e as external representation
+@cindex #i as external representation
+@cindex # in external representation of number
+A numerical constant may be specified to be either exact or inexact by a
+prefix.  The prefixes are @code{#e} for exact, and @code{#i} for
+inexact.  An exactness prefix may appear before or after any radix
+prefix that is used.  If the written representation of a number has no
+exactness prefix, the constant may be either inexact or exact.  It is
+inexact if it contains a decimal point, an exponent, or a @code{#}
+character in the place of a digit, otherwise it is exact.
+
+@cindex s, as exponent marker in number
+@cindex f, as exponent marker in number
+@cindex d, as exponent marker in number
+@cindex l, as exponent marker in number
+@cindex e, as exponent marker in number
+@cindex exponent marker (defn)
+@cindex precision, of inexact number
+@cindex numeric precision, inexact
+@cindex internal representation, for inexact number
+@cindex short precision, of inexact number
+@cindex single precision, of inexact number
+@cindex double precision, of inexact number
+@cindex long precision, of inexact number
+In systems with inexact numbers of varying precisions it may be useful
+to specify the precision of a constant.  For this purpose, numerical
+constants may be written with an @dfn{exponent marker} that indicates
+the desired precision of the inexact representation.  The letters
+@code{s}, @code{f}, @code{d}, and @code{l} specify the use of
+@emph{short}, @emph{single}, @emph{double}, and @emph{long} precision,
+respectively.  (When fewer than four internal inexact representations
+exist, the four size specifications are mapped onto those available.
+For example, an implementation with two internal representations may map
+short and single together and long and double together.)  In addition,
+the exponent marker @code{e} specifies the default precision for the
+implementation.  The default precision has at least as much precision as
+@emph{double}, but implementations may wish to allow this default to be
+set by the user.
+
+@example
+@group
+3.14159265358979F0
+       @r{Round to single ---} 3.141593
+0.6L0
+       @r{Extend to long ---} .600000000000000
+@end group
+@end example
+
+@node Numerical operations, Numerical input and output, Syntax of numerical constants, Numbers
+@section Numerical operations
+@cindex numerical operations
+
+@xref{Entry Format}, for a summary of the naming conventions used to
+specify restrictions on the types of arguments to numerical routines.
+The examples used in this section assume that any numerical constant
+written using an exact notation is indeed represented as an exact
+number.  Some examples also assume that certain numerical constants
+written using an inexact notation can be represented without loss of
+accuracy; the inexact constants were chosen so that this is likely to be
+true in implementations that use flonums to represent inexact
+numbers.
+
+@deffn procedure number? object
+@deffnx procedure complex? object
+@deffnx procedure real? object
+@deffnx procedure rational? object
+@deffnx procedure integer? object
+@cindex type predicate, for number
+These numerical type predicates can be applied to any kind of argument,
+including non-numbers.  They return @code{#t} if the object is of the
+named type, and otherwise they return @code{#f}.  In general, if a type
+predicate is true of a number then all higher type predicates are also
+true of that number.  Consequently, if a type predicate is false of a
+number, then all lower type predicates are also false of that
+number.@footnote{In MIT/GNU Scheme the @code{rational?} procedure is the
+same as @code{real?}, and the @code{complex?} procedure is the same as
+@code{number?}.}
+
+@findex zero?
+@findex =
+If @var{z} is an inexact complex number, then @code{(real? @var{z})} is
+true if and only if @code{(zero? (imag-part @var{z}))} is true.  If
+@var{x} is an inexact real number, then @code{(integer? @var{x})} is
+true if and only if @code{(= @var{x} (round @var{x}))}.
+
+@example
+@group
+(complex? 3+4i)         @result{}  #t
+(complex? 3)            @result{}  #t
+(real? 3)               @result{}  #t
+(real? -2.5+0.0i)       @result{}  #t
+(real? #e1e10)          @result{}  #t
+(rational? 6/10)        @result{}  #t
+(rational? 6/3)         @result{}  #t
+(integer? 3+0i)         @result{}  #t
+(integer? 3.0)          @result{}  #t
+(integer? 8/4)          @result{}  #t
+@end group
+@end example
+
+Note: The behavior of these type predicates on inexact numbers is
+unreliable, since any inaccuracy may affect the result.
+
+@end deffn
+
+@deffn procedure exact? z
+@deffnx procedure inexact? z
+These numerical predicates provide tests for the exactness of a
+quantity.  For any Scheme number, precisely one of these predicates is
+true.
+@end deffn
+
+@deffn procedure exact-integer? object
+@deffnx procedure exact-nonnegative-integer? object
+@deffnx procedure exact-rational? object
+These procedures test for some very common types of numbers.  These
+tests could be written in terms of simpler predicates, but are more
+efficient.
+@end deffn
+
+@deffn procedure = z1 z2 z3 @dots{}
+@deffnx procedure < x1 x2 x3 @dots{}
+@deffnx procedure > x1 x2 x3 @dots{}
+@deffnx procedure <= x1 x2 x3 @dots{}
+@deffnx procedure >= x1 x2 x3 @dots{}
+@cindex ordering, of numbers
+@cindex comparison, of numbers
+@cindex equivalence predicate, for numbers
+These procedures return @code{#t} if their arguments are (respectively):
+equal, monotonically increasing, monotonically decreasing, monotonically
+nondecreasing, or monotonically nonincreasing.
+
+These predicates are transitive.  Note that the traditional
+implementations of these predicates in Lisp-like languages are not
+transitive.
+
+Note: While it is not an error to compare inexact numbers using these
+predicates, the results may be unreliable because a small inaccuracy may
+affect the result; this is especially true of @code{=} and @code{zero?}.
+When in doubt, consult a numerical analyst.
+@end deffn
+
+@deffn procedure zero? z
+@deffnx procedure positive? x
+@deffnx procedure negative? x
+@deffnx procedure odd? x
+@deffnx procedure even? x
+@cindex zero
+@cindex positive number
+@cindex negative number
+@cindex odd number
+@cindex even number
+These numerical predicates test a number for a particular property,
+returning @code{#t} or @code{#f}.  See note above regarding inexact
+numbers.
+@end deffn
+
+@deffn procedure max x1 x2 @dots{}
+@deffnx procedure min x1 x2 @dots{}
+@cindex minimum, of numbers
+@cindex maximum, of numbers
+These procedures return the maximum or minimum of their
+arguments.
+
+@example
+@group
+(max 3 4)              @result{}  4    @r{; exact}
+(max 3.9 4)            @result{}  4.0  @r{; inexact}
+@end group
+@end example
+
+Note: If any argument is inexact, then the result will also be inexact
+(unless the procedure can prove that the inaccuracy is not large enough
+to affect the result, which is possible only in unusual
+implementations).  If @code{min} or @code{max} is used to compare
+numbers of mixed exactness, and the numerical value of the result cannot
+be represented as an inexact number without loss of accuracy, then the
+procedure may report a violation of an implementation
+restriction.@footnote{MIT/GNU Scheme signals an error of type
+@code{condition-type:bad-range-argument} in this case.}
+@findex condition-type:bad-range-argument
+@end deffn
+
+@deffn procedure + z1 @dots{}
+@deffnx procedure * z1 @dots{}
+@cindex addition, of numbers
+@cindex sum, of numbers
+@cindex identity, additive
+@cindex multiplication, of numbers
+@cindex product, of numbers
+@cindex identity, multiplicative
+These procedures return the sum or product of their arguments.
+
+@example
+@group
+(+ 3 4)                 @result{}  7
+(+ 3)                   @result{}  3
+(+)                     @result{}  0
+(* 4)                   @result{}  4
+(*)                     @result{}  1
+@end group
+@end example
+@end deffn
+
+@deffn procedure - z1 z2 @dots{}
+@deffnx procedure / z1 z2 @dots{}
+@cindex subtraction, of numbers
+@cindex difference, of numbers
+@cindex inverse, additive, of number
+@cindex division, of numbers
+@cindex quotient, of numbers
+@cindex inverse, multiplicative, of number
+With two or more arguments, these procedures return the difference or
+quotient of their arguments, associating to the left.  With one
+argument, however, they return the additive or multiplicative inverse of
+their argument.
+
+@example
+@group
+(- 3 4)                 @result{}  -1
+(- 3 4 5)               @result{}  -6
+(- 3)                   @result{}  -3
+(/ 3 4 5)               @result{}  3/20
+(/ 3)                   @result{}  1/3
+@end group
+@end example
+@end deffn
+
+@deffn procedure 1+ z
+@deffnx procedure -1+ z
+@code{(1+ z)} is equivalent to @code{(+ z 1)}; @code{(-1+ z)} is
+equivalent to @code{(- z 1)}.
+@end deffn
+
+@deffn procedure abs x
+@cindex absolute value, of number
+@cindex magnitude, of real number
+Returns a real number with the magnitude of @var{x} and nonnegative
+sign bit.
+If @var{x} is a NaN, then the result has nonnegative sign bit and the
+payload of @var{x}, and is quiet if and only if @var{x} is quiet.
+Never raises a floating-point exception---not even for signalling NaN.
+
+@code{Abs} is limited to real numbers.
+For the complex magnitude, use @code{magnitude} instead.
+
+@example
+(abs -7)                @result{}  7
+(abs 0.)                @result{}  0.
+(abs -0.)               @result{}  0.
+(abs -inf.0)            @result{}  +inf.0
+(abs -snan.123)         @result{}  +snan.123
+(abs 1+2i)              @error{}
+@end example
+@end deffn
+
+@deffn procedure copysign x1 x2
+@cindex sign bit, of number
+Returns a real number with the magnitude of @var{x1} and the sign of
+@var{x2}.
+If @var{x1} is a NaN, then the result has the payload of @var{x1} and
+is quiet if and only if @var{x1} is quiet.
+Never raises a floating-point exception---not even for signalling NaN.
+
+@example
+@group
+(copysign 123 -1)              @result{}  -123
+(copysign 0. -1)               @result{}  -0.
+(copysign -0. 0.)              @result{}  0.
+(copysign -nan.123 0.)         @result{}  +nan.123
+(copysign +snan.123 -0.)       @result{}  -snan.123
+@end group
+@end example
+@end deffn
+
+@deffn procedure euclidean/ n1 n2
+@deffnx procedure floor/ n1 n2
+@deffnx procedure ceiling/ n1 n2
+@deffnx procedure truncate/ n1 n2
+@deffnx procedure round/ n1 n2
+@cindex division, of integers
+@cindex quotient, of integers
+@cindex remainder, of integers
+@cindex modulus, of integers
+@cindex integer division
+These procedures implement number-theoretic (integer) division.
+Given a numerator @var{n1} and denominator @var{n2}, they return two
+values @var{n3} and @var{n4}, respectively quotient (an integer) and
+remainder, such that
+@iftex
+@tex
+$$n_1 = n_2 n_3 + n_4,
+\qquad 0\leq \lvert n_4\rvert < \lvert n_2\rvert.$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+@var{n1} = (@var{n2} * @var{n3}) + @var{n4},
+
+0 <= |@var{n4}| < |@var{n2}|.
+@end group
+@end example
+
+@end ifnottex
+The procedures differ in choice of quotient and remainder:
+
+@itemize
+@item
+@code{euclidean/} chooses the remainder @var{n4} to be nonnegative, so
+that
+@iftex
+@tex
+$0\leq n_4 < \lvert n_2\rvert$.
+@end tex
+@end iftex
+@ifnottex
+@math{0 <= @var{n4} < @var{n2}}.
+@end ifnottex
+
+@example
+@group
+(euclidean/ 15 4)       @result{}  3, 3
+(euclidean/ 13 4)       @result{}  3, 1
+(euclidean/ 13 -4)      @result{}  -3, 1
+(euclidean/ +1 4)       @result{}  0, 1
+(euclidean/ 0 4)        @result{}  0, 0
+(euclidean/ -1 4)       @result{}  -1, 3
+(euclidean/ -13 4)      @result{}  -4, 3
+(euclidean/ -13 -4)     @result{}  4, 3
+@end group
+@end example
+
+The quotient part of euclidean division, which can be computed without
+the remainder using @code{euclidean-quotient}, is an odd function of
+the denominator:
+
+@example
+@group
+(- (euclidean-quotient @var{n1} (- @var{n2})))
+= (euclidean-quotient @var{n1} @var{n2})
+@end group
+@end example
+
+The remainder part of euclidean division, which can be computed
+without the quotient using @code{euclidean-remainder}, is an even
+function of the denominator:
+
+@example
+@group
+(euclidean-remainder @var{n1} (- @var{n2}))
+= (euclidean-remainder @var{n1} @var{n2})
+@end group
+@end example
+
+When the denominator @var{n2} is a positive power of two, the quotient
+@var{n3} of euclidean division coincides with the result of an
+arithmetic shift:
+
+@example
+@group
+(shift-right @var{n1} @var{s})
+= (euclidean-quotient @var{n1} (expt 2 @var{s}))
+@end group
+@end example
+
+@item
+@code{truncate/} chooses the quotient to have absolute value
+@iftex
+@tex
+$\lvert n_3\rvert = \lfloor\lvert n_1/n_2\rvert\rfloor$;
+@end tex
+@end iftex
+@ifnottex
+@math{@var{n3} = floor(|@var{n1}/@var{n2}|)};
+@end ifnottex
+in other words, @code{truncate/} rounds the quotient @var{n3} toward
+zero.
+
+@example
+@group
+(truncate/ 15 4)        @result{}  3, 3
+(truncate/ 13 4)        @result{}  3, 1
+(truncate/ 13 -4)       @result{}  -3, 1
+(truncate/ +1 4)        @result{}  0, 1
+(truncate/ 0 4)         @result{}  0, 0
+(truncate/ -1 4)        @result{}  0, -1
+(truncate/ -13 4)       @result{}  -3, -1
+(truncate/ -13 -4)      @result{}  3, -1
+@end group
+@end example
+
+If the remainder @var{n4} is nonzero, then it is negative if and only
+if the numerator @var{n1} is negative.
+Like euclidean division, the quotient @var{n3} is an odd function of
+the denominator @var{n2} and the remainder @var{n4} is an even
+function of the denominator @var{n2}.
+
+@item
+@code{floor/} chooses the quotient @var{n3} to be
+@iftex
+@tex
+$\lfloor n_1/n_2\rfloor$;
+@end tex
+@end iftex
+@ifnottex
+@math{floor(@var{n1}/@var{n2})};
+@end ifnottex
+in other words, @code{floor/} rounds the quotient @var{n3} toward
+negative infinity.
+
+@example
+@group
+(floor/ 15 4)           @result{}  3, 3
+(floor/ 13 4)           @result{}  3, 1
+(floor/ 13 -4)          @result{}  -4, -3
+(floor/ +1 4)           @result{}  0, 1
+(floor/ 0 4)            @result{}  0, 0
+(floor/ -1 4)           @result{}  -1, 3
+(floor/ -13 4)          @result{}  -4, 3
+(floor/ -13 -4)         @result{}  3, -1
+@end group
+@end example
+
+If the remainder @var{n4} is nonzero, then it is negative if and only
+if the denominator @var{n2} is negative.
+Like euclidean division, when the denominator @var{n2} is a positive
+power of two, the quotient @var{n3} from @code{floor/} coincides with
+the result of an arithmetic shift.
+
+@item
+@code{ceiling/} chooses the quotient @var{n3} to be
+@iftex
+@tex
+$\lceil n_1/n_2\rceil$;
+@end tex
+@end iftex
+@ifnottex
+@math{ceil(@var{n1}/@var{n2})};
+@end ifnottex
+in other words, @code{ceiling/} rounds the quotient @var{n3} toward
+positive infinity.
+
+@example
+@group
+(ceiling/ 15 4)         @result{}  4, -1
+(ceiling/ 13 4)         @result{}  4, -3
+(ceiling/ 13 -4)        @result{}  -3, 1
+(ceiling/ +1 4)         @result{}  1, -3
+(ceiling/ 0 4)          @result{}  0, 0
+(ceiling/ -1 4)         @result{}  0, -1
+(ceiling/ -13 4)        @result{}  -3, -1
+(ceiling/ -13 -4)       @result{}  4, 3
+@end group
+@end example
+
+If the remainder @var{n4} is nonzero, then it is negative if and only
+if the denominator @var{n2} is nonnegative.
+@code{Ceiling/} is useful for determining, given a number of units,
+how many blocks of a fixed number of units are needed to store that
+many units and how much space is wasted.
+
+@item
+@code{round/} chooses the quotient @var{n3} to be the integer nearest
+to
+@iftex
+@tex
+$n_1/n_2$,
+@end tex
+@end iftex
+@ifnottex
+@math{@var{n1}/@var{n2}},
+@end ifnottex
+or if it is exactly halfway between two integers, then the nearest
+even integer; in other words, @code{round/} implements the default
+@acronym{IEEE 754} rounding mode of round-to-nearest/ties-to-even.
+
+@example
+@group
+(round/ 15 4)           @result{}  4, -1
+(round/ 13 4)           @result{}  3, 1
+(round/ 13 -4)          @result{}  -3, 1
+(round/ +1 4)           @result{}  0, 1
+(round/ 0 4)            @result{}  0, 0
+(round/ -1 4)           @result{}  0, -1
+(round/ -13 4)          @result{}  -3, -1
+(round/ -13 -4)         @result{}  3, -1
+@end group
+@end example
+
+@code{Round/} guarantees that
+@iftex
+@tex
+$0 \leq \lvert n_4\rvert < \lvert n_2\rvert/2$.
+@end tex
+@end iftex
+@ifnottex
+@math{0 <= |@var{n4}| < @var{n2}/2}.
+@end ifnottex
+Like euclidean division, the quotient @var{n3} is an odd function of
+the denominator @var{n2} and the remainder @var{n4} is an even
+function of the denominator @var{n2}.
+@end itemize
+
+These procedures may also be applied to any real numbers, and are
+subject to inexact contagion:
+
+@example
+@group
+(truncate/ -13 -4.0)    @result{}  3.0, -1.0   @r{; inexact}
+(floor/ 4.56 1.0)       @result{}  4.0, 0.56
+(floor/ #e4.56 1)       @result{}  4, 14/25
+(euclidean/ 7.853981633974483 (atan 0 -1))
+                        @result{}  2.0, 1.5707963267948966
+@end group
+@end example
+
+(These are not useful for precise floating-point argument reduction
+modulo @math{2\pi}, e.g., in @code{cos}, @code{sin}, etc.; for that
+you need to represent @math{\pi} in extended precision.)
+@end deffn
+
+@deffn procedure euclidean-quotient n1 n2
+@deffnx procedure euclidean-remainder n1 n2
+@deffnx procedure floor-quotient n1 n2
+@deffnx procedure floor-remainder n1 n2
+@deffnx procedure ceiling-quotient n1 n2
+@deffnx procedure ceiling-remainder n1 n2
+@deffnx procedure truncate-quotient n1 n2
+@deffnx procedure truncate-remainder n1 n2
+@deffnx procedure round-quotient n1 n2
+@deffnx procedure round-remainder n1 n2
+These procedures return only the quotient or remainder part of an
+integer division.
+For example, @code{(floor/ @var{n1} @var{n2})} is equivalent to:
+
+@example
+@group
+(values (floor-quotient @var{n1} @var{n2})
+        (floor-remainder @var{n1} @var{n2}))
+@end group
+@end example
+@end deffn
+
+@deffn procedure quotient n1 n2
+@deffnx procedure remainder n1 n2
+@deffnx procedure modulo n1 n2
+@deffnx procedure integer-floor n1 n2
+@deffnx procedure integer-ceiling n1 n2
+@deffnx procedure integer-truncate n1 n2
+@deffnx procedure integer-round n1 n2
+Historic aliases for integer division routines, not applicable to
+non-integral rational or real numbers:
+
+@itemize
+@item
+@code{quotient} is an alias for @code{truncate-quotient}
+
+@item
+@code{remainder} is an alias for @code{truncate-remainder}
+
+@item
+@code{modulo} is an alias for @code{floor-remainder}
+
+@item
+@code{integer-floor} is an alias for @code{floor-quotient}
+
+@item
+@code{integer-ceiling} is an alias for @code{ceiling-quotient}
+
+@item
+@code{integer-truncate} is an alias for @code{truncate-quotient}
+
+@item
+@code{integer-round} is an alias for @code{round-quotient}
+@end itemize
+@end deffn
+
+@deffn procedure integer-divide n1 n2
+@deffnx procedure integer-divide-quotient qr
+@deffnx procedure integer-divide-remainder qr
+Historic alias for @code{truncate/} with a special data structure
+instead of multiple return values, not applicable to non-integral
+rational or real arguments.
+If @var{qr} is the result of @code{(integer-divide @var{n1} @var{n2})},
+then @code{(truncate/ @var{n1} @var{n2})} is equivalent to:
+
+@example
+@group
+(values (integer-divide-quotient @var{qr})
+        (integer-divide-remainder @var{qr}))
+@end group
+@end example
+@end deffn
+
+@deffn procedure gcd n1 @dots{}
+@deffnx procedure lcm n1 @dots{}
+@cindex greatest common divisor, of numbers
+@cindex least common multiple, of numbers
+These procedures return the greatest common divisor or least common
+multiple of their arguments.  The result is always non-negative.
+
+@example
+@group
+(gcd 32 -36)            @result{}  4
+(gcd)                   @result{}  0
+
+(lcm 32 -36)            @result{}  288
+(lcm 32.0 -36)          @result{}  288.0  @r{; inexact}
+(lcm)                   @result{}  1
+@end group
+@end example
+@end deffn
+
+@deffn procedure modexp b e m
+Modular exponentiation.
+Returns
+@iftex
+@tex
+$b^e \bmod m$.
+@end tex
+@end iftex
+@ifnottex
+b^e mod m.
+@end ifnottex
+@var{b}, @var{e}, and @var{m} must be exact integers; @var{m} must be
+nonzero.
+Mathematically equivalent to @code{(modulo (expt b e) m)}, but works
+even for large inputs for which the intermediate @code{(expt b e)}
+would overflow memory.
+
+@example
+@group
+(modexp 1234 5678 90)   @result{}  46
+(modexp 2 (expt 2 1024) 299)
+                        @result{}  55
+@end group
+@end example
+@end deffn
+
+@deffn procedure numerator q
+@deffnx procedure denominator q
+These procedures return the numerator or denominator of their argument;
+the result is computed as if the argument was represented as a fraction
+in lowest terms.  The denominator is always positive.  The denominator
+of 0 is defined to be 1.
+
+@example
+@group
+(numerator (/ 6 4))     @result{}  3
+(denominator (/ 6 4))   @result{}  2
+(denominator (inexact (/ 6 4)))
+                        @result{}  2.0
+@end group
+@end example
+@end deffn
+
+@deffn procedure floor x
+@deffnx procedure ceiling x
+@deffnx procedure truncate x
+@deffnx procedure round x
+These procedures return integers.  @code{floor} returns the largest
+integer not larger than @var{x}.  @code{ceiling} returns the smallest
+integer not smaller than @var{x}.  @code{truncate} returns the integer
+closest to @var{x} whose absolute value is not larger than the absolute
+value of @var{x}.  @code{round} returns the closest integer to @var{x},
+rounding to even when @var{x} is halfway between two integers.
+
+Rationale: @code{round} rounds to even for consistency with the rounding
+modes required by the @sc{ieee} floating point standard.
+
+Note: If the argument to one of these procedures is inexact, then the
+result will also be inexact.  If an exact value is needed, the result
+should be passed to the @code{exact} procedure (or use one of the
+procedures below).
+
+@example
+@group
+(floor -4.3)          @result{}  -5.0
+(ceiling -4.3)        @result{}  -4.0
+(truncate -4.3)       @result{}  -4.0
+(round -4.3)          @result{}  -4.0
+
+(floor 3.5)           @result{}  3.0
+(ceiling 3.5)         @result{}  4.0
+(truncate 3.5)        @result{}  3.0
+(round 3.5)           @result{}  4.0  @r{; inexact}
+
+(round 7/2)           @result{}  4    @r{; exact}
+(round 7)             @result{}  7
+@end group
+@end example
+@end deffn
+
+@deffn procedure floor->exact x
+@deffnx procedure ceiling->exact x
+@deffnx procedure truncate->exact x
+@deffnx procedure round->exact x
+These procedures are similar to the preceding procedures except that
+they always return an exact result.  For example, the following are
+equivalent
+
+@example
+@group
+(floor->exact x)
+(exact (floor x))
+@end group
+@end example
+
+@noindent
+except that the former is faster and has fewer range restrictions.
+@end deffn
+
+@deffn procedure rationalize x y
+@deffnx procedure rationalize->exact x y
+@cindex simplest rational (defn)
+@cindex rational, simplest (defn)
+@code{rationalize} returns the @emph{simplest} rational number differing
+from @var{x} by no more than @var{y}.  A rational number @var{r1} is
+@emph{simpler} than another rational number @var{r2} if
+@t{@var{r1}=@var{p1}/@var{q1}} and @t{@var{r2}=@var{p2}/@var{q2}} (both
+in lowest terms) and @t{|@var{p1}|<=|@var{p2}|} and
+@t{|@var{q1}|<=|@var{q2}|}.  Thus @t{3/5} is simpler than @t{4/7}.
+Although not all rationals are comparable in this ordering (consider
+@t{2/7} and @t{3/5}) any interval contains a rational number that is
+simpler than every other rational number in that interval (the simpler
+@t{2/5} lies between @t{2/7} and @t{3/5}).  Note that @t{0=0/1} is the
+simplest rational of all.
+
+@example
+@group
+(rationalize (exact .3) 1/10)  @result{}  1/3    @r{; exact}
+(rationalize .3 1/10)          @result{}  #i1/3  @r{; inexact}
+@end group
+@end example
+
+@code{rationalize->exact} is similar to @code{rationalize} except that
+it always returns an exact result.
+@end deffn
+
+@deffn procedure simplest-rational x y
+@deffnx procedure simplest-exact-rational x y
+@code{simplest-rational} returns the simplest rational number between
+@var{x} and @var{y} inclusive; @code{simplest-exact-rational} is similar
+except that it always returns an exact result.
+
+These procedures implement the same functionality as @code{rationalize}
+and @code{rationalize->exact}, except that they specify the input range
+by its endpoints; @code{rationalize} specifies the range by its center
+point and its (half-) width.
+@end deffn
+
+@deffn procedure exp z
+@deffnx procedure log z
+@deffnx procedure sin z
+@deffnx procedure cos z
+@deffnx procedure tan z
+@deffnx procedure asin z
+@deffnx procedure acos z
+@deffnx procedure atan z
+@deffnx procedure atan y x
+@findex angle
+@findex make-rectangular
+These procedures compute the usual transcendental functions.  @code{log}
+computes the natural logarithm of @var{z} (not the base ten logarithm).
+@code{asin}, @code{acos}, and @code{atan} compute arcsine, arccosine,
+and arctangent, respectively.  The two-argument variant of @code{atan}
+computes @code{(angle (make-rectangular @var{x} @var{y}))} (see
+below).
+
+In general, the mathematical functions log, arcsine, arccosine, and
+arctangent are multiply defined.  For nonzero real @var{x}, the value of
+log @var{x} is defined to be the one whose imaginary part lies in the
+range minus @var{pi} (exclusive) to @var{pi} (inclusive).  log 0 is
+undefined.  The value of log @var{z} when @var{z} is complex is defined
+according to the formula
+@tex
+$$\log z = \log \mathop{\rm magnitude}(z) + i \mathop{\rm angle} (z)$$
+@end tex
+@ifinfo
+
+@example
+log @var{z} = log magnitude(@var{z}) + i angle(@var{z})
+@end example
+
+@end ifinfo
+With log defined this way, the values of arcsine, arccosine, and
+arctangent are according to the following formulae:
+@tex
+$$\eqalign{
+  \sin^{-1} z &= -i \log (i z + \sqrt{1 - z^2}) \cr
+  \cos^{-1} z &= \pi / 2 - \sin^{-1} z \cr
+  \tan^{-1} z &= (\log (1 + i z) - \log (1 - i z)) / (2 i)
+}$$
+@end tex
+@ifinfo
+
+@example
+@group
+arcsin(@var{z}) = -i log(i @var{z} + sqrt(1 - @var{z}^2))
+arccos(@var{z}) = pi/2 - arcsin(@var{z})
+arctan(@var{z}) = (log(1 + i @var{z}) + log(1 - i @var{z})) / (2 i)
+@end group
+@end example
+
+@end ifinfo
+The above specification follows @cite{Common Lisp: the Language}, which
+in turn cites @cite{Principal Values and Branch Cuts in Complex APL};
+refer to these sources for more detailed discussion of branch cuts,
+boundary conditions, and implementation of these functions.  When it is
+possible these procedures produce a real result from a real
+argument.
+@end deffn
+
+@deffn procedure log1p z
+@deffnx procedure expm1 z
+Equivalent to:
+@iftex
+@tex
+\eqimage{fig/log1p}{$$\mathop{\rm log1p} z = \log (1 + z),$$}
+\eqimage{fig/expm1}{$$\mathop{\rm expm1} z = \exp (z) - 1.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+log1p z = log(1 + z).
+expm1 z = exp(z) - 1,
+@end group
+@end example
+
+@image{fig/log1p}
+@image{fig/expm1}
+
+@end ifnottex
+
+However, for real numbers close to zero, or for complex numbers near
+the circle of radius @math{1} about @math{-1}, these provide better
+approximations than
+@code{(log (+ 1 @var{z}))}
+or
+@code{(- (exp @var{z}) 1)}:
+
+@itemize @bullet
+@item
+Floating-point numbers have much higher density around @math{0} than
+around @math{1}, so naive translation from near @math{0} to near
+@math{1} loses precision, and naive computation of a number near
+@math{1} loses precision even if it is followed by translation to near
+@math{0}.
+
+@item
+The condition number of log near @math{1} is unbounded, while the
+condition number of log1p near @math{0} is near @math{1}:
+
+@iftex
+@tex
+\eqimage{fig/cn-log1p}
+  {$$x f'(x)/f(x) = {x/(1 + x) \over \log(1 + x)}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = [x/(1 + x)]/log(1 + x).
+@end example
+
+@image{fig/cn-log1p}
+
+@end ifnottex
+(Conversely, the condition number of log near @math{0} approaches
+@math{0}, while the condition number of log1p near @math{-1} is
+unbounded, so for inputs near @math{0} it is better to compute them
+via log rather than via log1p.)
+
+@item
+Similarly, although the condition number of exp near @math{0} is near
+@math{0}, its @emph{value} near @math{0} is near @math{1}, and the
+condition number of @math{y - 1} is unbounded for @math{y} near
+@math{1}, so the intermediate error introduced by @code{(exp @var{z})}
+may be amplified arbitrarily by then computing @code{(- (exp @var{z})
+1)}.
+In contrast, the condition number of expm1 itself near @math{0} is
+near @math{1}, so it does not inherently amplify errors:
+
+@iftex
+@tex
+\eqimage{fig/cn-expm1}
+  {$$x f'(x)/f(x) = {x e^x \over e^x - 1}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = x e^x/(e^x - 1).
+@end example
+
+@image{fig/cn-expm1}
+@end ifnottex
+@end itemize
+
+On real numbers, the forward relative error of this implementation is
+determined by the system's math library, usually below 1ulp.
+
+On complex numbers:
+
+@itemize @bullet
+@item
+The forward relative error @emph{in complex magnitude} is bounded by a
+small multiple of the system math library's error for exp, expm1, log,
+log1p, sin, and cos.
+
+@item
+The @emph{componentwise} forward relative error of @code{log1p} is
+bounded by a small multiple of the system math library's error for
+log and log1p.
+
+@item
+The @emph{componentwise} forward relative error of @code{expm1} is
+bounded by a small multiple of the system math library's error for
+exp, expm1, log, log1p, sin, and cos---@emph{except} on @math{x + i y}
+where @math{x} is near zero and @math{e^{-x}} is near @math{\cos y}.
+@end itemize
+@end deffn
+
+@deffn procedure versin z
+@deffnx procedure exsec z
+@deffnx procedure aversin z
+@deffnx procedure aexsec z
+Zero-centered trigonometric functions related to cosine but
+well-conditioned near zero:
+@iftex
+@tex
+\eqimage{fig/versin}{$$\versin z = 1 - \cos z,$$}
+\eqimage{fig/exsec}{$$\exsec z = {1 - \cos z \over \cos z}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+versin z = 1 - cos z
+exsec z = (1 - cos z)/cos z
+@end example
+@group
+
+@image{fig/versin}
+@image{fig/exsec}
+
+@end group
+@end ifnottex
+
+Both functions are well-conditioned near zero on the real line:
+@iftex
+@tex
+\eqimage{fig/cn-versin}
+  {$${x \versin' x \over \versin x} = {x \sin x \over 1 - \cos x},$$}
+\eqimage{fig/cn-exsec}
+  {$${x \exsec' x \over \exsec x} = {x \tan x \over 1 - \cos x}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x versin'(x)/versin(x) = x sin(x)/(1 - cos(x)),
+x exsec'(x)/exsec(x) = x tan(x)/(1 - cos(x)).
+@end example
+@group
+
+@image{fig/cn-versin}
+@image{fig/cn-exsec}
+
+@end group
+@end ifnottex
+@end deffn
+
+@deffn procedure logp1 z
+Alias for @code{log1p}.
+@end deffn
+
+@deffn procedure exp2 z
+@deffnx procedure exp10 z
+@deffnx procedure exp2m1 z
+@deffnx procedure exp10m1 z
+@deffnx procedure log2 z
+@deffnx procedure log10 z
+@deffnx procedure log2p1 z
+@deffnx procedure log10p1 z
+Base-2 and base-10 variants of @code{exp}, @code{expm1}, @code{log},
+and @code{log1p}.
+@end deffn
+
+@deffn procedure log1mexp x
+@deffnx procedure log1pexp x
+Equivalent to:
+@iftex
+@tex
+\eqimage{fig/log1mexp}{$$\mathop{\rm log1mexp} x = \log (1 - e^x),$$}
+\eqimage{fig/log1pexp}{$$\mathop{\rm log1pexp} x = \log (1 + e^x).$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+log1mexp x = log (1 - e^x),
+log1pexp x = log (1 + e^x).
+@end group
+@end example
+
+@image{fig/log1mexp}
+@image{fig/log1pexp}
+
+@end ifnottex
+Like log1p and expm1, these avoid numerical pathologies with the
+intermediate quantities @math{1 - e^x} and @math{1 + e^x} and inputs
+to log near @math{1}.
+
+@itemize @bullet
+@item
+log1mexp computes the complement of a probability @math{p} in
+log-space @math{\log p}, and as such is a self-inverse.
+It is finite when @math{x < 0}; negative infinity when @math{x =
+0}; and invalid otherwise.
+
+@item
+log1pexp is related to the logistic function @math{1/(1 + e^{-x})} ---
+specifically, it differs from the logarithm of the logistic function
+only by the sign of the input and the output.
+@end itemize
+
+This implementation gives forward relative error bounded by ten times
+the forward relative error bound of the system math library's log and
+exp, which is usually below 1ulp.
+
+Beware that although the forward relative error of the MIT/GNU Scheme
+@emph{implementations} of these functions is bounded, these
+@emph{functions} are ill-conditioned for large negative inputs:
+@iftex
+@tex
+\nobreak\par\nobreak%
+$$x f'(x)/f(x) = {\pm x e^x \over (1 \pm e^x) \log(1 \pm e^x)}
+  \approx x, \quad\hbox{for $x \ll 0$.}$$
+\nobreak\par\nobreak\leavevmode%
+\begingroup%
+  % Load up the two figures into \box0 and \box1.
+  \setbox0=\hbox{\image{fig/cn-log1pexp}}%
+  \setbox1=\hbox{\image{fig/cn-log1mexp}}%
+  % Compute the width we have to work with here in \dimen0.
+  \dimen0=\hsize%
+    \advance\dimen0 by -\leftskip%
+    \advance\dimen0 by -\hangindent%
+    \advance\dimen0 by -\rightskip%
+  % Create an hbox of that width for the two figures with horizontal
+  % space before, between, and after.
+  \hbox to \dimen0{%
+    \hfill%
+    \vbox{\dimen0=\wd0 \box0    % Save width and dispense with box.
+      \hbox to\dimen0{\hfill Condition number of log1pexp\hfill}}%
+    \hfill%
+    \vbox{\dimen1=\wd1 \box1    % Save width and dispense with box.
+      \hbox to\dimen1{\hfill Condition number of log1mexp\hfill}}%
+    \hfill%
+  }%
+\endgroup
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = (+/- x exp(x))/((1 +/- e^x) log(1 +/- e^x)),
+  --> x,  for x << 0.
+@end example
+
+@image{fig/cn-log1mexp}
+@image{fig/cn-log1pexp}
+
+@end ifnottex
+@end deffn
+
+@deffn procedure logistic x
+@deffnx procedure logit x
+Logistic and logit functions.
+Equivalent to:
+@iftex
+@tex
+\eqimage{fig/logistic}
+  {$$\mathop{\rm logistic} x = {e^x \over 1 + e^x} = {1 \over 1 + e^{-x}},$$}
+\eqimage{fig/logit}
+  {$$\mathop{\rm logit} p = \log {p \over 1 - p} = \log {1 \over {1\over p} - 1}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+logistic x = exp(x)/[1 + exp(x)] = 1/[1 + exp(-x)],
+logit p = log p/(1 - p).
+@end group
+@end example
+
+@end ifnottex
+
+These functions are inverses of one another.
+The logit function maps a probablity @math{p} in @math{[0, 1]} into
+log-odds @math{x} in the extended real line, and the logistic function
+maps back from log-odds to probabilities.
+
+@itemize @bullet
+@item
+The logistic function is defined on the entire real line, but is
+ill-conditioned for large negative @var{x}, with condition number
+@iftex
+@tex
+\eqimage{fig/cn-logistic}
+  {$$x f'(x)/f(x) = {x e^{-x} \over 1 + e^{-x}}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = x exp(-x)/[1 + exp(-x)].
+@end example
+
+@image{fig/cn-logistic}
+
+@end ifnottex
+The identity
+@iftex
+@tex
+$$\mathop{\rm logistic}(-x) = 1 - \mathop{\rm logistic}(x)$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+logistic(-x) = 1 - logistic(x)
+@end example
+
+@end ifnottex
+may help to rearrange a computation, along with the logistic-1/2
+function which ranges from @math{-1/2} to @math{+1/2} and centered at
+zero rather than from @math{0} to @math{1} and centered at @math{1/2}.
+
+This implementation gives forward relative error bounded by at most
+seven times the forward relative error bound of the system math
+library's exp, which is usually below 1ulp.
+
+@item
+The logit function is defined on the closed unit interval @math{[0,
+1]}, but is ill-conditioned near @math{1/2} and @math{1}, with
+condition number
+@iftex
+@tex
+\eqimage{fig/cn-logit}
+  {$$x f'(x)/f(x) = {1/(1 - p) \over \log (p/(1 - p))}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = 1/[(1 - p) log(p/(1 - p))].
+@end example
+
+@image{fig/cn-logit}
+
+@end ifnottex
+The identity
+@iftex
+@tex
+$$\mathop{\rm logit}(1 - p) = -\mathop{\rm logit}(p)$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+logit(1 - p) = -logit(p)
+@end example
+
+@end ifnottex
+may help to rearrange a computation, along with the logit1/2+ function
+which is defined on @math{-1/2} to @math{+1/2} and centered at zero
+rather than on @math{0} to @math{1} and centered at @math{1/2}.
+
+This implementation gives forward relative error bounded by at most
+ten times the forward relative error bound of the system math
+library's log, which is usually below 1ulp.
+@end itemize
+@end deffn
+
+@deffn procedure logistic-1/2 x
+@deffnx procedure logit1/2+ x
+Equivalent to:
+@iftex
+@tex
+\eqimage{fig/logistichalf}
+  {$$\mathop{\hbox{\rm logistic-1/2}} x = \mathop{\rm logistic}(x) - 1/2,$$}
+\eqimage{fig/logithalf}
+  {$$\mathop{\hbox{\rm logit1/2+}} p = \mathop{\rm logit}(1/2 + p).$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+logistic-1/2 x = logistic(x) - 1/2,
+logit1/2+ p = logit(1/2 + p).
+@end group
+@end example
+
+@image{fig/logistichalf}
+@image{fig/logithalf}
+
+@end ifnottex
+
+Like @code{logistic} and @code{logit}, these functions are inverses of
+one another; unlike @code{logistic} and @code{logit}, their domains
+and codomains are both centered at zero.
+
+@itemize @bullet
+@item
+The logistic-1/2 function is well-conditioned on the entire real line,
+with maximum condition number @math{1} at @math{0}:
+@iftex
+@tex
+\eqimage{fig/cn-logistichalf}
+  {$$x f'(x)/f(x) = {2x e^{-x} \over 1 - e^{-2x}}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = 2 x e^-x / (1 - (e^-x)^2).
+@end example
+
+@image{fig/cn-logistichalf}
+
+@end ifnottex
+This implementation gives forward relative error bounded by 5 times
+the forward relative error bound of the system math library's exp,
+which is usually below 1ulp.
+
+@item
+The logit1/2+ function is defined on @math{[-1/2, +1/2]}, and is
+ill-conditioned near @math{-1/2} and @math{+1/2}:
+@iftex
+@tex
+\eqimage{fig/cn-logithalf}
+  {$$x f'(x)/f(x) = {x / (1 - 4 x^2) \over \mathop{\rm logit}(1/2 + x)}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = x/[(1 - 4 x^2) logit(1/2 + x)].
+@end example
+
+@image{fig/cn-logithalf}
+
+@end ifnottex
+For points near @math{-1/2} or @math{+1/2}, it may be better to
+compute logit of a point near @math{0} instead.
+This implementation gives forward relative error bounded by 34 times
+the forward relative error bound of the system math library's log,
+which is usually below 1ulp.
+@end itemize
+@end deffn
+
+@deffn procedure log-logistic x
+@deffnx procedure logit-exp x
+Equivalent to:
+@iftex
+@tex
+\eqimage{fig/loglogistic}
+  {$$\eqalign{
+    \mathop{\hbox{\rm log-logistic}} x
+      &= \log \mathop{\rm logistic}(x) \cr
+      &= \log [1/(1 + e^{-x})],
+  }$$}
+\eqimage{fig/logitexp}
+  {$$\eqalign{
+    \mathop{\hbox{\rm logit-exp}} x
+      &= \mathop{\rm logit}(e^x) \cr
+      &= \log [e^x/(1 - e^x)].
+  }$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+log-logistic x = log(logistic(x)) = log [1/(1 + exp(-x))]
+logit-exp x = logit(exp(x)) = log [exp(x)/(1 - exp(x))]
+@end group
+@end example
+
+@end ifnottex
+
+Like @code{logistic} and @code{logit}, these functions are inverses of
+one another.
+
+@itemize @bullet
+@item
+@cindex log-probability
+@cindex log-odds
+The log@hy{}logistic function maps log-odds on the extended real line
+to log@hy{}probability on the nonpositive half of the extended real
+line, and is ill@hy{}conditioned for large positive @var{x}:
+@iftex
+@tex
+\eqimage{fig/cn-loglogistic}
+  {$$x f'(x)/f(x) = {-x e^{-x}/(1 + e^{-x}) \over \log (1 + e^{-x})}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = (-x exp(-x))/[(1 + exp(-x)) log(1 + exp(-x))]
+@end example
+
+@image{fig/cn-loglogistic}
+
+@end ifnottex
+
+@item
+@cindex log-probability
+@cindex log-odds
+The logit@hy{}exp function maps log-probability on the nonpositive
+half of the extended real line to log-odds on the extended real line,
+and is ill@hy{}conditioned near @math{\log(1/2)}:
+@iftex
+@tex
+\eqimage{fig/cn-logitexp}
+  {$$x f'(x)/f(x) = {x/(1 - e^x) \over \log [e^x/(1 - e^x)]}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+x f'(x)/f(x) = x/[(1 - exp(x)) log(exp(x)/(1 - exp(x)))]
+@end example
+
+@image{fig/cn-logitexp}
+
+@end ifnottex
+@end itemize
+
+This implementation gives forward relative error bounded by ten times
+the forward relative error bound of the system math library's log and
+exp, which is usually below 1ulp.
+@end deffn
+
+@deffn procedure logsumexp list
+@var{List} must be a list of real numbers
+@iftex
+@tex
+$x_1, x_2, \ldots, x_n$.
+@end tex
+@end iftex
+@ifnottex
+@var{x1}, @var{x2}, @dots{}, @var{xn}.
+@end ifnottex
+Returns an approximation to:
+@iftex
+@tex
+$$\log (e^{x_1} + e^{x_2} + \cdots + e^{x_n}).$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+log(exp(@var{x1}) + exp(@var{x2}) + @dots{} + exp(@var{xn})).
+@end example
+
+@end ifnottex
+The computation avoids intermediate overflow; @code{logsumexp}
+returns @code{+inf.0} if and only if one of the inputs is
+@code{+inf.0}.
+@end deffn
+
+@deffn procedure sin-pi* x
+@deffnx procedure cos-pi* x
+@deffnx procedure tan-pi* x
+@deffnx procedure versin-pi* x
+@deffnx procedure exsec-pi* x
+@deffnx procedure asin/pi x
+@deffnx procedure acos/pi x
+@deffnx procedure atan/pi x
+@deffnx procedure atan2/pi y x
+@deffnx procedure aversin/pi x
+@deffnx procedure aexsec/pi x
+These procedures compute the standard trigonometric functions in units
+of half-revolutions rather than units of radians.
+Mathematically, @code{(sin-pi* x)} computes @math{\sin(\pi x)} and
+@code{(asin/pi x)} computes @math{\arcsin(x)/\pi}, etc.
+@end deffn
+
+@deffn procedure sqrt z
+Returns the principal square root of @var{z}.  The result will have
+either positive real part, or zero real part and non-negative imaginary
+part.
+@end deffn
+
+@deffn procedure rsqrt z
+Returns the reciprocal of the principal square root of @var{z}.
+@end deffn
+
+@deffn procedure sqrt1pm1 z
+Returns
+@iftex
+@tex
+\eqimage{fig/sqrt1pm1}
+  {$$\sqrt{1 + z} - 1.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+sqrt(1 + @var{z}) - 1
+@end example
+
+@image{fig/sqrt1pm1}
+
+@end ifnottex
+
+This function is well-conditioned except for @var{z} near @math{-1};
+the condition number is:
+@iftex
+@tex
+\eqimage{fig/cn-sqrt1pm1}
+  {$${z/2 \over z - (\sqrt{1 + z} - 1)}.$$}
+@end tex
+@end iftex
+@ifnottex
+
+@example
+(z/2) / (z - (sqrt(1 + z) - 1))
+@end example
+
+@image{fig/cn-sqrt1pm1}
+
+@end ifnottex
+
+Using @code{(sqrt1pm1 @var{z})} instead of
+@code{(- (sqrt (+ 1 @var{z})) 1)}
+avoids loss of precision when @var{z} is near @math{0}.
+@end deffn
+
+@deffn procedure expt z1 z2
+Returns @var{z1} raised to the power @var{z2}:
+@tex
+$${z_1}^{z_2} = e^{z_2 \log {z_1}}$$
+$0^0$ is defined to be equal to 1.
+@end tex
+@ifinfo
+
+@example
+@var{z1}^@var{z2} = e^(@var{z2} log @var{z1})
+@end example
+
+@noindent
+0^0 is defined to be equal to 1.
+@end ifinfo
+@end deffn
+
+@deffn procedure compound z1 z2
+@deffnx procedure compoundm1 z1 z2
+@code{Compound} returns
+@iftex
+@tex
+$(1 + z_1)^{z_2}$,
+@end tex
+@end iftex
+@ifnottex
+(1 + @var{z1})^@var{z2},
+@end ifnottex
+and @code{compoundm1} returns
+@iftex
+@tex
+$(1 + z_1)^{z_2} - 1$,
+@end tex
+@end iftex
+@ifnottex
+(1 + @var{z1})^@var{z2} - 1,
+@end ifnottex
+with low relative error even for @var{z1} near zero.
+@end deffn
+
+@deffn procedure make-rectangular x1 x2
+@deffnx procedure make-polar x3 x4
+@deffnx procedure real-part z
+@deffnx procedure imag-part z
+@deffnx procedure magnitude z
+@deffnx procedure angle z
+@deffnx procedure conjugate z
+Suppose @var{x1}, @var{x2}, @var{x3}, and @var{x4} are real numbers and
+@var{z} is a complex number such that
+@tex
+ $$ z = x_1 + x_2\hbox{$i$}
+ = x_3 \cdot e^{{\displaystyle{\hbox{$i$}} x_4}}$$
+@end tex
+@ifinfo
+
+@example
+@var{z} = @var{x1} + @var{x2} i = @var{x3} e^(i @var{x4})
+@end example
+
+@end ifinfo
+@noindent
+Then @code{make-rectangular} and @code{make-polar} return @var{z},
+@code{real-part} returns @var{x1}, @code{imag-part} returns @var{x2},
+@code{magnitude} returns @var{x3}, and @code{angle} returns @var{x4}.
+In the case of @code{angle}, whose value is not uniquely determined by
+the preceding rule, the value returned will be the one in the range
+minus @var{pi} (exclusive) to @var{pi} (inclusive).
+
+@code{conjugate} returns the complex conjugate of @var{z}.
+@end deffn
+
+The procedures @code{exact} and @code{inexact} implement the natural
+one-to-one correspondence between exact and inexact integers
+throughout an implementation-dependent range.
+
+@deffn procedure inexact z
+@deffnx procedure exact->inexact z
+@code{inexact} returns an inexact representation of @var{z}.  The
+value returned is the inexact number that is numerically closest to
+the argument.  For inexact arguments, the result is the same as the
+argument.  For exact complex numbers, the result is a complex number
+whose real and imaginary parts are the result of applying
+@code{inexact} to the real and imaginary parts of the argument,
+respectively.  If an exact argument has no reasonably close inexact
+equivalent (in the sense of @code{=}), then a violation of an
+implementation restriction may be reported.
+
+The procedure @code{exact->inexact} has been deprecated by @urseven{}.
+@end deffn
+
+@deffn procedure exact z
+@deffnx procedure inexact->exact z
+@code{exact} returns an exact representation of @var{z}.  The value
+returned is the exact number that is numerically closest to the
+argument.  For exact arguments, the result is the same as the
+argument. For inexact non-integral real arguments, the implementation
+may return a rational approximation, or may report an implementation
+violation.  For inexact complex arguments, the result is a complex
+number whose real and imaginary parts are the result of applying
+@code{exact} to the real and imaginary parts of the argument,
+respectively.  If an inexact argument has no reasonably close exact
+equivalent (in the sense of @code{=}), then a violation of an
+implementation restriction may be reported.
+
+The procedure @code{inexact->exact} has been deprecated by @urseven{}.
+@end deffn
+
+@node Numerical input and output, Bit operations, Numerical operations, Numbers
+@section Numerical input and output
+@cindex numerical input and output
+
+@deffn procedure number->string number [radix]
+@var{Radix} must be an exact integer, either 2, 8, 10, or 16.  If
+omitted, @var{radix} defaults to 10.  The procedure
+@code{number->string} takes a number and a radix and returns as a string
+an external representation of the given number in the given radix such
+that
+
+@example
+@group
+(let ((number @var{number})
+      (radix @var{radix}))
+  (eqv? number
+        (string->number (number->string number radix)
+                        radix)))
+@end group
+@end example
+
+@noindent
+is true.  It is an error if no possible result makes this expression
+true.
+
+If @var{number} is inexact, the radix is 10, and the above expression
+can be satisfied by a result that contains a decimal point, then the
+result contains a decimal point and is expressed using the minimum
+number of digits (exclusive of exponent and trailing zeroes) needed to
+make the above expression true; otherwise the format of the result is
+unspecified.
+
+The result returned by @code{number->string} never contains an explicit
+radix prefix.
+
+Note: The error case can occur only when @var{number} is not a complex
+number or is a complex number with an non-rational real or imaginary
+part.
+
+Rationale: If @var{number} is an inexact number represented using
+flonums, and the radix is 10, then the above expression is normally
+satisfied by a result containing a decimal point.  The unspecified case
+allows for infinities, NaNs, and non-flonum representations.
+@end deffn
+
+@defvr variable flonum-parser-fast?
+This variable controls the behavior of @code{string->number} when
+parsing inexact numbers.  Specifically, it allows the user to trade off
+accuracy against speed.
+
+When set to its default value, @code{#f}, the parser provides maximal
+accuracy, as required by the Scheme standard.  If set to @code{#t}, the
+parser uses faster algorithms that will sometimes introduce small errors
+in the result.  The errors affect a few of the least-significant bits of
+the result, and consequently can be tolerated by many applications.
+@end defvr
+
+@defvr variable flonum-unparser-cutoff
+This variable is @strong{deprecated}; use
+@code{param:flonum-printer-cutoff} instead.
+@end defvr
+
+@defvr parameter param:flonum-printer-cutoff
+This parameter controls the action of @code{number->string} when
+@var{number} is a flonum (and consequently controls all printing of
+flonums).  This parameter may be called with an argument to set its
+value.
+
+The value of this parameter is normally a list of three items:
+
+@table @var
+@item rounding-type
+One of the following symbols: @code{normal}, @code{relative}, or
+@code{absolute}.  The symbol @code{normal} means that the number should
+be printed with full precision.  The symbol @code{relative} means that
+the number should be rounded to a specific number of digits.  The symbol
+@code{absolute} means that the number should be rounded so that there
+are a specific number of digits to the right of the decimal point.
+
+@item precision
+An exact integer.  If @var{rounding-type} is @code{normal},
+@var{precision} is ignored.  If @var{rounding-type} is @code{relative},
+@var{precision} must be positive, and it specifies the number of digits
+to which the printed representation will be rounded.  If
+@var{rounding-type} is @code{absolute}, the printed representation will
+be rounded @var{precision} digits to the right of the decimal point; if
+@var{precision} is negative, the representation is rounded @code{(-
+@var{precision})} digits to the left of the decimal point.
+
+@item format-type
+One of the symbols: @code{normal}, @code{scientific}, or
+@code{engineering}.  This specifies the format in which the number will
+be printed.@*  @code{scientific} specifies that the number will be printed
+using scientific notation: @code{@var{x}.@var{xxx}e@var{yyy}}.  In other
+words, the number is printed as a significand between zero inclusive and
+ten exclusive, and an exponent.  @code{engineering} is like
+@code{scientific}, except that the exponent is always a power of three,
+and the significand is constrained to be between zero inclusive and 1000
+exclusive.  If @code{normal} is specified, the number will be printed in
+positional notation if it is ``small enough'', otherwise it is printed
+in scientific notation.  A number is ``small enough'' when the number of
+digits that would be printed using positional notation does not exceed
+the number of digits of precision in the underlying floating-point
+number representation; @acronym{IEEE 754-2008} binary64 floating-point
+numbers have 17 digits of precision.
+@end table
+
+@noindent
+This three-element list may be abbreviated in two ways.  First, the
+symbol @code{normal} may be used, which is equivalent to the list
+@code{(normal 0 normal)}.  Second, the third element of the list,
+@var{format-type}, may be omitted, in which case it defaults to
+@code{normal}.
+
+@noindent
+The default value for @code{param:flonum-printer-cutoff} is @code{normal}.
+If it is bound to a value different from those described here,
+@code{number->string} issues a warning and acts as though the value had
+been @code{normal}.
+@end defvr
+
+@noindent
+Some examples of @code{param:flonum-printer-cutoff}:
+
+@example
+(number->string (* 4 (atan 1 1)))
+                                    @result{}  "3.141592653589793"
+(parameterize ((param:flonum-printer-cutoff '(relative 5)))
+  (number->string (* 4 (atan 1 1))))
+                                    @result{}  "3.1416"
+(parameterize ((param:flonum-printer-cutoff '(relative 5)))
+  (number->string (* 4000 (atan 1 1))))
+                                    @result{}  "3141.6"
+(parameterize ((param:flonum-printer-cutoff '(relative 5 scientific)))
+  (number->string (* 4000 (atan 1 1))))
+                                    @result{}  "3.1416e3"
+(parameterize ((param:flonum-printer-cutoff '(relative 5 scientific)))
+  (number->string (* 40000 (atan 1 1))))
+                                    @result{}  "3.1416e4"
+(parameterize ((param:flonum-printer-cutoff '(relative 5 engineering)))
+  (number->string (* 40000 (atan 1 1))))
+                                    @result{}  "31.416e3"
+(parameterize ((param:flonum-printer-cutoff '(absolute 5)))
+  (number->string (* 4 (atan 1 1))))
+                                    @result{}  "3.14159"
+(parameterize ((param:flonum-printer-cutoff '(absolute 5)))
+  (number->string (* 4000 (atan 1 1))))
+                                    @result{}  "3141.59265"
+(parameterize ((param:flonum-printer-cutoff '(absolute -4)))
+  (number->string (* 4e10 (atan 1 1))))
+                                    @result{}  "31415930000."
+(parameterize ((param:flonum-printer-cutoff '(absolute -4 scientific)))
+  (number->string (* 4e10 (atan 1 1))))
+                                    @result{}  "3.141593e10"
+(parameterize ((param:flonum-printer-cutoff '(absolute -4 engineering)))
+  (number->string (* 4e10 (atan 1 1))))
+                                    @result{}  "31.41593e9"
+(parameterize ((param:flonum-printer-cutoff '(absolute -5)))
+  (number->string (* 4e10 (atan 1 1))))
+                                    @result{}  "31415900000."
+@end example
+
+@deffn procedure string->number string [radix]
+Returns a number of the maximally precise representation expressed by
+the given @var{string}.  @var{Radix} must be an exact integer, either 2,
+8, 10, or 16.  If supplied, @var{radix} is a default radix that may be
+overridden by an explicit radix prefix in @var{string} (e.g.@:
+@code{"#o177"}).  If @var{radix} is not supplied, then the default radix
+is 10.  If @var{string} is not a syntactically valid notation for a
+number, then @code{string->number} returns @code{#f}.
+
+@example
+@group
+(string->number "100")        @result{}  100
+(string->number "100" 16)     @result{}  256
+(string->number "1e2")        @result{}  100.0
+(string->number "15##")       @result{}  1500.0
+@end group
+@end example
+
+@noindent
+Note that a numeric representation using a decimal point or an exponent
+marker is not recognized unless @var{radix} is @code{10}.
+@end deffn
+
+@node Bit operations, Fixnum and Flonum Operations, Numerical input and output, Numbers
+@section Bit operations
+
+@cindex bitwise operations
+This section describes operations on exact integers as strings of
+bits in two's-complement representation.
+All arguments must be exact integers.
+
+@deffn procedure bitwise-not x
+Bitwise complement.
+Equivalent to @code{(- -1 @var{x})}.
+@end deffn
+
+@deffn procedure bitwise-and x1 x2 @dots{}
+@deffnx procedure bitwise-andc2 x1 x2
+@deffnx procedure bitwise-andc1 x1 x2
+@deffnx procedure bitwise-xor x1 x2 @dots{}
+@deffnx procedure bitwise-ior x1 x2 @dots{}
+@deffnx procedure bitwise-nor x1 x2
+@deffnx procedure bitwise-eqv x1 x2 @dots{}
+@deffnx procedure bitwise-orc2 x1 x2
+@deffnx procedure bitwise-orc1 x1 x2
+@deffnx procedure bitwise-nand x1 x2
+Bitwise operations.
+The `c1'/`c2' variants take the complement of their first or second
+operand, respectively; for example,
+@code{(bitwise-andc2 @var{x1} @var{x2})}
+is equivalent to
+@code{(bitwise-and @var{x1} (bitwise-not @var{x2}))}.
+
+The four bitwise operations that are associative are extended to
+arbitrary numbers of arguments with an appropriate identity:
+@example
+@group
+(bitwise-and)           @result{} -1
+(bitwise-xor)           @result{} 0
+(bitwise-ior)           @result{} 0
+(bitwise-eqv)           @result{} -1
+@end group
+@end example
+@end deffn
+
+@deffn procedure shift-left x n
+@deffnx procedure shift-right x n
+@deffnx procedure arithmetic-shift x n
+Multiplication and integer division by
+@iftex
+@tex
+$2^n$:
+@end tex
+@end iftex
+@ifnottex
+@math{2^@var{n}}:
+@end ifnottex
+@code{(shift-left @var{x} @var{n})}
+is equivalent to
+@code{(* @var{x} (expt 2 @var{n}))},
+and
+@code{(shift-left @var{x} @var{n})}
+is equivalent to
+@code{(euclidean-quotient @var{x} (expt 2 @var{n}))}.
+
+@code{Shift-left} and @code{shift-right} require @var{n} to be
+nonnegative; @code{arithmetic-shift} is equivalent to
+@code{shift-left} for positive @var{n}, and equivalent to
+@code{shift-right} for the negation of negative @var{n}.
+@end deffn
+
+@deffn procedure bit-mask size position
+Returns an integer with @var{size} consecutive bits set starting at
+@var{position}, zero-based, and all other bits clear.
+Both arguments must be nonnegative.
+
+@example
+@group
+(bit-mask 0 123)        @result{} 0
+(bit-mask 4 3)          @result{} #b1111000
+@end group
+@end example
+@end deffn
+
+@deffn procedure bit-antimask size position
+Returns an integer with @var{size} consecutive bits clear starting at
+@var{position}, zero-based, and all other bits set.
+Both arguments must be nonnegative.
+Equivalent to
+@code{(bitwise-not (bit-mask @var{size} @var{position}))}.
+
+@example
+@group
+(bit-antimask 0 123)    @result{} -1
+(bit-antimask 4 3)      @result{} #b-1111001  @r{; `@code{#b...10000111}'}
+@end group
+@end example
+@end deffn
+
+@deffn procedure bit-count x
+@cindex pop count
+Returns the number of 1 bits in @var{x}, if it is nonnegative, or the
+number of 0 bits, if it is negative.
+Sometimes known as `pop count' or `population count'.
+@end deffn
+
+@deffn procedure hamming-distance x y
+Returns the Hamming distance between @var{x} and @var{y}---that is,
+the number of bits that differ in corresponding positions of their
+finite representations, or @math{-1} if they have opposite signs
+(meaning that they differ in an infinite number of positions).
+Equivalent to @code{(bit-count (bitwise-xor @var{x} @var{y}))}.
+
+@example
+@group
+(hamming-distance 1 3)          @result{} 1
+(hamming-distance 7 8)          @result{} 4
+(hamming-distance -8 -9)        @result{} 4
+(hamming-distance 1 -1)         @result{} -1
+@end group
+@end example
+@end deffn
+
+@deffn procedure integer-length x
+Returns the number of bit positions needed to represent @var{x} in
+two's-complement:
+zero when @var{x} is zero;
+the exact value of
+@code{(ceiling (/ (log @var{x}) (log 2)))}
+when @var{x} is positive;
+@code{(integer-length (bitwise-not @var{x}))}
+when @var{x} is negative.
+
+@example
+@group
+(integer-length -129)           @result{} 9
+(integer-length -128)           @result{} 8
+(integer-length -127)           @result{} 7
+(integer-length -1)             @result{} 0
+(integer-length 0)              @result{} 0
+(integer-length 1)              @result{} 1
+(integer-length 127)            @result{} 7
+(integer-length 128)            @result{} 8
+@end group
+@end example
+@end deffn
+
+@deffn procedure first-set-bit x
+Returns the zero-based position of the first set bit in @var{x}.
+For zero, returns @math{-1}.
+@end deffn
+
+@deffn procedure set-bit n x
+@deffnx procedure clear-bit n x
+@deffnx procedure toggle-bit n x
+@deffnx procedure extract-bit n x
+@deffnx procedure bit-set? n x
+@deffnx procedure bit-clear? n x
+@code{Set-bit} returns the integer @var{x} with the bit at position
+@var{n} set.
+@code{Clear-bit} returns the integer @var{x} with the bit at position
+@var{n} clear.
+@code{Toggle-bit} returns the integer @var{x} with the bit at position
+@var{n} in the opposite state.
+
+@code{Extract-bit} returns the bit at position @var{n} in @var{x} as
+an integer, 0 or 1.
+@code{Bit-set?} returns true if that bit is set, false if clear.
+@code{Bit-clear?} returns false if that bit is set, true if clear.
+@end deffn
+
+@deffn procedure bit n
+@deffnx procedure bits n m
+@code{(bit @var{n})} returns a mask with the @var{n}th bit set and
+all other bits clear.
+@code{(bits @var{n} @var{m})} returns a mask with bits @var{n}
+through @var{m} set, inclusive and zero-based, and all other bits
+clear.
+@var{n} and @var{m} may occur in either order.
+
+@example
+@group
+(bit 7)                 @result{} 128
+(bits 4 5)              @result{} #b110000
+(bits 5 4)              @result{} #b110000
+@end group
+@end example
+@end deffn
+
+@deffn procedure shiftout x mask
+@deffnx procedure shiftin x mask
+@var{mask} must be a nonnegative integer with a contiguous substring
+of bits set, representing a contiguous field of bits.
+
+@code{(shiftout @var{x} @var{mask})} returns the corresponding value
+of that field in @var{x}; that is,
+@code{(bitwise-and (shift-right @var{x} @var{n}) @var{mask})},
+where @var{n} is the position of the first set bit in @var{mask}.
+
+@code{(shiftin @var{x} @var{mask})} returns an an integer with that
+field set to @var{x}; that is,
+@code{(shift-left @var{x} @var{n})}.
+
+Intended to be used with @code{bit} and @code{bits}.
+For example:
+
+@example
+@group
+(define foo:x (bits 0 3))
+(define foo:y (bits 4 5))
+(define foo:z (bits 6 7))
+
+(define (make-foo x y z)
+  (bitwise-ior (shiftin x foo:x)
+               (shiftin y foo:y)
+               (shiftin z foo:z)))
+
+(define (foo-x foo) (shiftout foo foo:x))
+(define (foo-y foo) (shiftout foo foo:y))
+(define (foo-z foo) (shiftout foo foo:z))
+
+(make-foo 1 2 3)                @result{} #b11100001
+(foo-z (make-foo 1 2 3))        @result{} 3
+@end group
+@end example
+@end deffn
+
+@node Fixnum and Flonum Operations, Random Number Generation, Bit operations, Numbers
+@section Fixnum and Flonum Operations
+
+This section describes numerical operations that are restricted forms of
+the operations described above.  These operations are useful because
+they compile very efficiently.  However, care should be exercised: if
+used improperly, these operations can return incorrect answers, or even
+malformed objects that confuse the garbage collector.
+
+@menu
+* Fixnum Operations::
+* Flonum Operations::
+* Floating-Point Environment::
+* Floating-Point Exceptions::
+* Floating-Point Rounding Mode::
+@end menu
+
+@node Fixnum Operations, Flonum Operations, Fixnum and Flonum Operations, Fixnum and Flonum Operations
+@subsection Fixnum Operations
+
+@cindex fixnum (defn)
+A @dfn{fixnum} is an exact integer that is small enough to fit in a
+machine word.  In MIT/GNU Scheme, fixnums are typically 24 or 26 bits,
+depending on the machine; it is reasonable to assume that fixnums are at
+least 24 bits.  Fixnums are signed; they are encoded using 2's
+complement.
+
+All exact integers that are small enough to be encoded as fixnums are
+always encoded as fixnums --- in other words, any exact integer that is
+not a fixnum is too big to be encoded as such.  For this reason, small
+constants such as @code{0} or @code{1} are guaranteed to be fixnums.
+
+@deffn procedure fix:fixnum? object
+@cindex type predicate, for fixnum
+Returns @code{#t} if @var{object} is a fixnum; otherwise returns
+@code{#f}.
+@end deffn
+
+Here is an expression that determines the largest fixnum:
+
+@example
+@group
+(let loop ((n 1))
+  (if (fix:fixnum? n)
+      (loop (* n 2))
+      (- n 1)))
+@end group
+@end example
+
+@noindent
+A similar expression determines the smallest fixnum.
+
+@deffn procedure fix:= fixnum fixnum
+@deffnx procedure fix:< fixnum fixnum
+@deffnx procedure fix:> fixnum fixnum
+@deffnx procedure fix:<= fixnum fixnum
+@deffnx procedure fix:>= fixnum fixnum
+@cindex equivalence predicate, for fixnums
+These are the standard order and equality predicates on fixnums.  When
+compiled, they do not check the types of their arguments.
+@end deffn
+
+@deffn procedure fix:zero? fixnum
+@deffnx procedure fix:positive? fixnum
+@deffnx procedure fix:negative? fixnum
+These procedures compare their argument to zero.  When compiled, they do
+not check the type of their argument.  The code produced by the
+following expressions is identical:
+
+@example
+@group
+(fix:zero? @var{fixnum})
+(fix:= @var{fixnum} 0)
+@end group
+@end example
+
+@noindent
+Similarly, @code{fix:positive?} and @code{fix:negative?} produce code
+identical to equivalent expressions using @code{fix:>} and @code{fix:<}.
+@end deffn
+
+@deffn procedure fix:+ fixnum fixnum
+@deffnx procedure fix:- fixnum fixnum
+@deffnx procedure fix:* fixnum fixnum
+@deffnx procedure fix:quotient fixnum fixnum
+@deffnx procedure fix:remainder fixnum fixnum
+@deffnx procedure fix:gcd fixnum fixnum
+@deffnx procedure fix:1+ fixnum
+@deffnx procedure fix:-1+ fixnum
+These procedures are the standard arithmetic operations on fixnums.
+When compiled, they do not check the types of their arguments.
+Furthermore, they do not check to see if the result can be encoded as a
+fixnum.  If the result is too large to be encoded as a fixnum, a
+malformed object is returned, with potentially disastrous effect on the
+garbage collector.
+@end deffn
+
+@deffn procedure fix:divide fixnum fixnum
+@findex integer-divide
+@findex integer-divide-quotient
+@findex integer-divide-remainder
+This procedure is like @code{integer-divide}, except that its arguments
+and its results must be fixnums.  It should be used in conjunction with
+@code{integer-divide-quotient} and @code{integer-divide-remainder}.
+@end deffn
+
+@cindex logical operations, on fixnums
+@cindex bitwise-logical operations, on fixnums
+The following are @dfn{bitwise-logical} operations on fixnums.
+
+@deffn procedure fix:not fixnum
+This returns the bitwise-logical inverse of its argument.  When
+compiled, it does not check the type of its argument.
+
+@example
+@group
+(fix:not 0)             @result{}  -1
+(fix:not -1)            @result{}  0
+(fix:not 1)             @result{}  -2
+(fix:not -34)           @result{}  33
+@end group
+@end example
+@end deffn
+
+@deffn procedure fix:and fixnum fixnum
+This returns the bitwise-logical ``and'' of its arguments.  When
+compiled, it does not check the types of its arguments.
+
+@example
+@group
+(fix:and #x43 #x0f)     @result{}  3
+(fix:and #x43 #xf0)     @result{}  #x40
+@end group
+@end example
+@end deffn
+
+@deffn procedure fix:andc fixnum fixnum
+Returns the bitwise-logical ``and'' of the first argument with the
+bitwise-logical inverse of the second argument.  When compiled, it does
+not check the types of its arguments.
+
+@example
+@group
+(fix:andc #x43 #x0f)    @result{}  #x40
+(fix:andc #x43 #xf0)    @result{}  3
+@end group
+@end example
+@end deffn
+
+@deffn procedure fix:or fixnum fixnum
+This returns the bitwise-logical ``inclusive or'' of its arguments.
+When compiled, it does not check the types of its arguments.
+
+@example
+@group
+(fix:or #x40 3)         @result{}  #x43
+(fix:or #x41 3)         @result{}  #x43
+@end group
+@end example
+@end deffn
+
+@deffn procedure fix:xor fixnum fixnum
+This returns the bitwise-logical ``exclusive or'' of its arguments.
+When compiled, it does not check the types of its arguments.
+
+@example
+@group
+(fix:xor #x40 3)        @result{}  #x43
+(fix:xor #x41 3)        @result{}  #x42
+@end group
+@end example
+@end deffn
+
+@deffn procedure fix:lsh fixnum1 fixnum2
+This procedure returns the result of shifting @var{fixnum1} by
+@var{fixnum2} bits.
+If @var{fixnum2} is positive, @var{fixnum1} is shifted left; if
+negative, it is shifted right @emph{arithmetically} in signed
+two's-complement.
+When compiled, it does not check the types of its arguments, nor the
+validity of its result.
+
+@example
+@group
+(fix:lsh 1 10)          @result{}  #x400
+(fix:lsh #x432 -10)     @result{}  1
+(fix:lsh -1 3)          @result{}  -8
+(fix:lsh -128 -4)       @result{}  -8
+@end group
+@end example
+
+@strong{Warning:} In the past, the semantics of @code{fix:lsh} when
+both arguments were negative has been inconsistent.
+@end deffn
+
+@node Flonum Operations, Floating-Point Environment, Fixnum Operations, Fixnum and Flonum Operations
+@subsection Flonum Operations
+
+@cindex flonum (defn)
+A @dfn{flonum} is an inexact real number that is implemented as a
+floating-point number.  In MIT/GNU Scheme, all inexact real numbers are
+flonums.  For this reason, constants such as @code{0.} and @code{2.3}
+are guaranteed to be flonums.
+
+MIT/GNU Scheme follows the @acronym{IEEE 754-2008} floating-point
+standard, using binary64 arithmetic for flonums.
+All floating-point values are classified into:
+
+@table @asis
+@item normal
+@cindex floating-point number, normal
+@cindex normal floating-point number
+Numbers of the form
+@iftex
+@tex
+$$\pm r^e (1 + f/r^p)$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
++/- r^e (1 + f/r^p)
+@end example
+
+@end ifnottex
+where @math{r}, the radix, is a positive integer, here always @math{2};
+@math{p}, the precision, is a positive integer, here always @math{53};
+@math{e}, the exponent, is an integer within a limited range, here
+always @math{-1022} to @math{1023} (inclusive); and @math{f}, the
+fractional part of the significand, is a @math{(p-1)}-bit unsigned
+integer,
+
+@item subnormal
+@cindex floating-point number, subnormal
+@cindex subnormal floating-point number
+@cindex denormal
+Fixed-point numbers near zero that allow for gradual underflow.
+Every subnormal number is an integer multiple of the smallest
+subnormal number.
+Subnormals were also historically called ``denormal''.
+
+@item zero
+@cindex floating-point number, zero
+@cindex zero
+@cindex signed zero
+There are two distinguished zero values, one with ``negative'' sign
+bit and one with ``positive'' sign bit.
+
+The two zero values are considered numerically equal, but serve to
+distinguish paths converging to zero along different branch cuts and
+so some operations yield different results for differently signed
+zero values.
+
+@item infinity
+@vindex +inf.0
+@vindex -inf.0
+@cindex positive infinity (@code{+inf.0})
+@cindex negative infinity (@code{-inf.0})
+@cindex floating-point number, infinite
+@cindex infinity (@code{+inf.0}, @code{-inf.0})
+@cindex extended real line
+There are two distinguished infinity values, negative infinity or
+@code{-inf.0} and positive infinity or @code{+inf.0}, representing
+overflow on the real line.
+
+@item NaN
+@vindex NaN (not a number)
+@vindex +nan.0
+@vindex -nan.0
+@vindex +snan.1
+@vindex -snan.1
+@cindex floating-point number, not a number
+@cindex not a number (NaN, @code{+nan.0})
+@cindex NaN
+There are @math{4 r^{p-2} - 2} distinguished not-a-number values,
+representing invalid operations or uninitialized data, distinguished
+by their negative/positive sign bit, a quiet/signalling bit, and a
+@math{(p-2)}-digit unsigned integer payload which must not be zero for
+signalling NaNs.
+
+@cindex quiet NaN
+@cindex signalling NaN
+@cindex invalid-operation exception
+Arithmetic on @strong{quiet} NaNs propagates them without raising any
+floating-point exceptions.
+In contrast, arithmetic on @strong{signalling} NaNs raises the
+floating-point invalid-operation exception.
+Quiet NaNs are written @code{+nan.123}, @code{-nan.0}, etc.
+Signalling NaNs are written @code{+snan.123}, @code{-snan.1}, etc.
+The notation @code{+snan.0} and @code{-snan.0} is not allowed: what
+would be the encoding for them actually means @code{+inf.0} and
+@code{-inf.0}.
+
+@end table
+
+@deffn procedure flo:flonum? object
+@cindex type predicate, for flonum
+Returns @code{#t} if @var{object} is a flonum; otherwise returns @code{#f}.
+@end deffn
+
+@deffn procedure flo:= flonum1 flonum2
+@deffnx procedure flo:< flonum1 flonum2
+@deffnx procedure flo:<= flonum1 flonum2
+@deffnx procedure flo:> flonum1 flonum2
+@deffnx procedure flo:>= flonum1 flonum2
+@deffnx procedure flo:<> flonum1 flonum2
+@cindex equivalence predicate, for flonums
+@cindex ordered comparison
+@cindex floating-point comparison, ordered
+@cindex trichotomy
+These procedures are the standard order and equality predicates on
+flonums.  When compiled, they do not check the types of their arguments.
+These predicates raise floating-point invalid-operation exceptions on
+NaN arguments; in other words, they are ``ordered comparisons''.
+When floating-point exception traps are disabled, they return false
+when any argument is NaN.
+
+Every pair of floating-point numbers --- excluding NaN --- exhibits
+ordered trichotomy: they are related either by @code{flo:=},
+@code{flo:<}, or @code{flo:>}.
+@end deffn
+
+@deffn procedure flo:safe= flonum1 flonum2
+@deffnx procedure flo:safe< flonum1 flonum2
+@deffnx procedure flo:safe<= flonum1 flonum2
+@deffnx procedure flo:safe> flonum1 flonum2
+@deffnx procedure flo:safe>= flonum1 flonum2
+@deffnx procedure flo:safe<> flonum1 flonum2
+@deffnx procedure flo:unordered? flonum1 flonum2
+@cindex equivalence predicate, for flonums
+@cindex unordered comparison
+@cindex floating-point comparison, unordered
+@cindex tetrachotomy
+These procedures are the standard order and equality predicates on
+flonums.  When compiled, they do not check the types of their arguments.
+These predicates do not raise floating-point exceptions, and simply
+return false on NaN arguments, except @code{flo:unordered?} which
+returns true iff at least one argument is NaN; in other words, they
+are ``unordered comparisons''.
+
+Every pair of floating-point values --- including NaN --- exhibits
+unordered tetrachotomy: they are related either by @code{flo:safe=},
+@code{flo:safe<}, @code{flo:safe>}, or @code{flo:unordered?}.
+@end deffn
+
+@deffn procedure flo:zero? flonum
+@deffnx procedure flo:positive? flonum
+@deffnx procedure flo:negative? flonum
+Each of these procedures compares its argument to zero.  When compiled,
+they do not check the type of their argument.
+These predicates raise floating-point invalid-operation exceptions on
+NaN arguments; in other words, they are ``ordered comparisons''.
+
+@example
+@group
+(flo:zero? -0.)                @result{}  #t
+(flo:negative? -0.)            @result{}  #f
+(flo:negative? -1.)            @result{}  #t
+
+(flo:zero? 0.)                 @result{}  #t
+(flo:positive? 0.)             @result{}  #f
+(flo:positive? 1.)             @result{}  #f
+
+(flo:zero? +nan.123)           @result{}  #f  @r{; (raises invalid-operation)}
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:normal? flonum
+@deffnx procedure flo:subnormal? flonum
+@deffnx procedure flo:safe-zero? flonum
+@deffnx procedure flo:infinite? flonum
+@deffnx procedure flo:nan? flonum
+Floating-point classification predicates.
+For any flonum, exactly one of these predicates returns true.
+These predicates never raise floating-point exceptions.
+
+@example
+(flo:normal? 1.23)             @result{}  #t
+(flo:subnormal? 4e-124)        @result{}  #t
+(flo:safe-zero? -0.)           @result{}  #t
+(flo:infinite? +inf.0)         @result{}  #t
+(flo:nan? -nan.123)            @result{}  #t
+@end example
+@end deffn
+
+@deffn procedure flo:finite? flonum
+Equivalent to:
+
+@example
+@group
+(or (flo:safe-zero? @var{flonum})
+    (flo:subnormal? @var{flonum})
+    (flo:normal? @var{flonum}))
+; or
+(and (not (flo:infinite? @var{flonum}))
+     (not (flo:nan? @var{flonum})))
+@end group
+@end example
+
+True for normal, subnormal, and zero floating-point values; false for
+infinity and NaN.
+@end deffn
+
+@deffn procedure flo:classify flonum
+Returns a symbol representing the classification of the flonum, one
+of @code{normal}, @code{subnormal}, @code{zero}, @code{infinity}, or
+@code{nan}.
+@end deffn
+
+@deffn procedure flo:sign-negative? flonum
+Returns true if the sign bit of @var{flonum} is negative, and false
+otherwise.
+Never raises a floating-point exception---not even for signalling NaN.
+
+@example
+@group
+(flo:sign-negative? +0.)       @result{}  #f
+(flo:sign-negative? -0.)       @result{}  #t
+(flo:sign-negative? -1.)       @result{}  #t
+(flo:sign-negative? +inf.0)    @result{}  #f
+(flo:sign-negative? +nan.123)  @result{}  #f
+
+(flo:negative? -0.)            @result{}  #f
+(flo:negative? +nan.123)       @result{}  #f  @r{; (raises invalid-operation)}
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:+ flonum1 flonum2
+@deffnx procedure flo:- flonum1 flonum2
+@deffnx procedure flo:* flonum1 flonum2
+@deffnx procedure flo:/ flonum1 flonum2
+These procedures are the standard arithmetic operations on flonums.
+When compiled, they do not check the types of their arguments.
+@end deffn
+
+@deffn procedure flo:*+ flonum1 flonum2 flonum3
+@deffnx procedure flo:*- flonum1 flonum2 flonum3
+@deffnx procedure flo:fma flonum1 flonum2 flonum3
+@deffnx procedure flo:fast-fma?
+Fused multiply-add:
+@code{(flo:*+ @var{u} @var{v} @var{a})} computes @math{uv+a} correctly
+rounded, with no intermediate overflow or underflow arising from
+@math{uv}.
+In contrast, @code{(flo:+ (flo:* @var{u} @var{v}) @var{a})} may have
+two rounding errors, and can overflow or underflow if @math{uv} is too
+large or too small even if @math{uv + a} is normal.
+@code{Flo:fma} is an alias for @code{flo:*+} with the more familiar
+name used in other languages like C.
+
+@code{(flo:*- @var{u} @var{v} @var{s})} computes @math{uv-s} correctly
+rounded, equivalent to
+@code{(flo:*+ @var{u} @var{v} (flo:negate @var{s}))}.
+
+@code{Flo:fast-fma?} returns true if the implementation of fused
+multiply-add is supported by fast hardware, and false if it is
+emulated using Dekker's double-precision algorithm in software.
+
+@example
+@group
+(flo:+ (flo:* 1.2e100 2e208) -1.4e308)
+                               @result{}  +inf.0  @r{; (raises overflow)}
+(flo:*+ 1.2e100 2e208  -1.4e308)
+                               @result{}  1e308
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:negate flonum
+This procedure returns the negation of its argument.  When compiled, it
+does not check the type of its argument.
+Never raises a floating-point exception---not even for signalling NaN.
+
+This is @emph{not} equivalent to @code{(flo:- 0. @var{flonum})}:
+
+@example
+@group
+(flo:negate 1.2)               @result{}  -1.2
+(flo:negate -nan.123)          @result{}  +nan.123
+(flo:negate +inf.0)            @result{}  -inf.0
+(flo:negate 0.)                @result{}  -0.
+(flo:negate -0.)               @result{}  0.
+
+(flo:- 0. 1.2)                 @result{}  -1.2
+(flo:- 0. -nan.123)            @result{}  -nan.123
+(flo:- 0. +inf.0)              @result{}  -inf.0
+(flo:- 0. 0.)                  @result{}  0.
+(flo:- 0. -0.)                 @result{}  0.
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:abs flonum
+@deffnx procedure flo:copysign flonum1 flonum2
+@deffnx procedure flo:exp flonum
+@deffnx procedure flo:exp2 flonum
+@deffnx procedure flo:exp10 flonum
+@deffnx procedure flo:expm1 flonum
+@deffnx procedure flo:exp2m1 flonum
+@deffnx procedure flo:exp10m1 flonum
+@deffnx procedure flo:log flonum
+@deffnx procedure flo:log2 flonum
+@deffnx procedure flo:log10 flonum
+@deffnx procedure flo:log1p flonum
+@deffnx procedure flo:logp1 flonum
+@deffnx procedure flo:log2p1 flonum
+@deffnx procedure flo:log10p1 flonum
+@deffnx procedure flo:sin flonum
+@deffnx procedure flo:cos flonum
+@deffnx procedure flo:tan flonum
+@deffnx procedure flo:asin flonum
+@deffnx procedure flo:acos flonum
+@deffnx procedure flo:atan flonum
+@deffnx procedure flo:sin-pi* flonum
+@deffnx procedure flo:cos-pi* flonum
+@deffnx procedure flo:tan-pi* flonum
+@deffnx procedure flo:asin/pi flonum
+@deffnx procedure flo:acos/pi flonum
+@deffnx procedure flo:atan/pi flonum
+@deffnx procedure flo:versin flonum
+@deffnx procedure flo:exsec flonum
+@deffnx procedure flo:aversin flonum
+@deffnx procedure flo:aexsec flonum
+@deffnx procedure flo:versin-pi* flonum
+@deffnx procedure flo:exsec-pi* flonum
+@deffnx procedure flo:aversin/pi flonum
+@deffnx procedure flo:aexsec/pi flonum
+@deffnx procedure flo:sinh flonum
+@deffnx procedure flo:cosh flonum
+@deffnx procedure flo:tanh flonum
+@deffnx procedure flo:asinh flonum
+@deffnx procedure flo:acosh flonum
+@deffnx procedure flo:atanh flonum
+@deffnx procedure flo:sqrt flonum
+@deffnx procedure flo:cbrt flonum
+@deffnx procedure flo:rsqrt flonum
+@deffnx procedure flo:sqrt1pm1 flonum
+@deffnx procedure flo:expt flonum1 flonum2
+@deffnx procedure flo:compound flonum1 flonum2
+@deffnx procedure flo:compoundm1 flonum1 flonum2
+@deffnx procedure flo:erf flonum
+@deffnx procedure flo:erfc flonum
+@deffnx procedure flo:hypot flonum1 flonum2
+@deffnx procedure flo:j0 flonum
+@deffnx procedure flo:j1 flonum
+@deffnx procedure flo:jn flonum
+@deffnx procedure flo:y0 flonum
+@deffnx procedure flo:y1 flonum
+@deffnx procedure flo:yn flonum
+@deffnx procedure flo:gamma flonum
+@deffnx procedure flo:lgamma flonum
+@deffnx procedure flo:floor flonum
+@deffnx procedure flo:ceiling flonum
+@deffnx procedure flo:truncate flonum
+@deffnx procedure flo:round flonum
+@deffnx procedure flo:floor->exact flonum
+@deffnx procedure flo:ceiling->exact flonum
+@deffnx procedure flo:truncate->exact flonum
+@deffnx procedure flo:round->exact flonum
+These procedures are flonum versions of the corresponding procedures.
+When compiled, they do not check the types of their arguments.
+@end deffn
+
+@deffn procedure flo:atan2 flonum1 flonum2
+@deffnx procedure flo:atan2/pi flonum1 flonum2
+@findex atan
+These are the flonum versions of @code{atan} and @code{atan/pi} with
+two arguments.
+When compiled, they do not check the types of their arguments.
+@end deffn
+
+@deffn procedure flo:signed-lgamma x
+Returns two values,
+@iftex
+@tex
+$$
+  m = \log \left|\Gamma(x)\right|
+\quad\hbox{and}\quad
+  s = \mathop{\rm sign} \Gamma(x),
+$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+@group
+m = log(|Gamma(@var{x})|)
+
+and
+
+s = sign(Gamma(@var{x})),
+@end group
+@end example
+
+@end ifnottex
+respectively a flonum and an exact integer either @code{-1} or
+@code{1}, so that
+@iftex
+@tex
+$$\Gamma(x) = s \cdot e^m.$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+Gamma(x) = s * e^m.
+@end example
+
+@end ifnottex
+@end deffn
+
+@deffn procedure flo:min x1 x2
+@deffnx procedure flo:max x1 x2
+Returns the min or max of two floating-point numbers.
+@code{-0.} is considered less than @code{+0.} for the purposes of
+@code{flo:min} and @code{flo:max}.
+
+If either argument is NaN, raises the floating-point invalid-operation
+exception if it is a signalling NaN, and returns a quiet NaN.
+In other words, @code{flo:min} and @code{flo:max} propagate NaN.
+
+These are the minimum and maximum operations of @acronym{IEEE 754-2019}.
+@end deffn
+
+@deffn procedure flo:min-mag x1 x2
+@deffnx procedure flo:max-mag x1 x2
+Returns the argument that has the smallest or largest magnitude, or
+the min or max if the magnitude is the same.
+
+If either argument is NaN, raises the floating-point invalid-operation
+exception if it is a signalling NaN, and returns a quiet NaN.
+In other words, @code{flo:min-mag} and @code{flo:max-mag} propagate
+NaN.
+
+These are the minimumMagnitude and maximumMagnitude operations of
+@acronym{IEEE 754-2019}.
+@end deffn
+
+@deffn procedure flo:min-num x1 x2
+@deffnx procedure flo:max-num x1 x2
+Returns the min or max of two floating-point numbers.
+@code{-0.} is considered less than @code{+0.} for the purposes of
+@code{flo:min-num} and @code{flo:max-num}.
+
+If either argument is NaN, raises the floating-point invalid-operation
+exception if it is a signalling NaN, and returns the other one if it
+is not NaN, or the first argument if they are both NaN.
+In other words, @code{flo:min-num} and @code{flo:max-num} treat NaN as
+missing data and ignore it if possible.
+
+These are the minimumNumber and maximumNumber operations of
+@acronym{IEEE 754-2019}, formerly called minNum and maxNum in
+@acronym{IEEE 754-2008}.
+@end deffn
+
+@deffn procedure flo:min-mag-num x1 x2
+@deffnx procedure flo:max-mag-num x1 x2
+Returns the argument that has the smallest or largest magnitude, or
+the min or max if the magnitude is the same.
+
+If either argument is NaN, raises the floating-point invalid-operation
+exception if it is a signalling NaN, and returns the other one if it
+is not NaN, or the first argument if they are both NaN.
+In other words, @code{flo:min-mag-num} and @code{flo:max-mag-num}
+treat NaN as missing data and ignore it if possible.
+
+These are the minimumMagnitudeNumber and maximumMagnitudeNumber
+operations of @acronym{IEEE 754-2019}, formerly called minNumMag and
+maxNumMag in @acronym{IEEE 754-2008}.
+@end deffn
+
+@deffn procedure flo:ldexp x1 x2
+@deffnx procedure flo:scalbn x1 x2
+@code{Flo:ldexp} scales by a power of two; @code{flo:scalbn} scales by
+a power of the floating-point radix.
+@iftex
+@tex
+$$\eqalign{
+  \mathop{\rm ldexp} x \, e &:= x \cdot 2^e, \cr
+  \mathop{\rm scalbn} x \, e &:= x \cdot r^e.
+}$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+ldexp x e := x * 2^e,
+scalbn x e := x * r^e.
+@end example
+
+@end ifnottex
+In MIT/GNU Scheme, these procedures are the same; they are both
+provided to make it clearer which operation is meant.
+@end deffn
+
+@deffn procedure flo:logb x
+For nonzero finite @var{x}, returns
+@iftex
+@tex
+$\lfloor \log_r x\rfloor$
+@end tex
+@end iftex
+@ifnottex
+@math{floor(log(x)/log(r))}
+@end ifnottex
+as an exact integer, where @math{r} is the floating-point radix.
+
+For all other inputs, raises invalid-operation and returns @code{#f}.
+@end deffn
+
+@deffn procedure flo:nextafter x1 x2
+Returns the next floating-point number after @var{x1} in the direction
+of @var{x2}.
+
+@example
+(flo:nextafter 0. -1.)         @result{}  -4.9406564584124654e-324
+@end example
+@end deffn
+
+@defvr constant flo:radix
+@defvrx constant flo:radix.
+@defvrx constant flo:precision
+Floating-point system parameters.
+@code{Flo:radix} is the floating-point radix as an integer, and
+@code{flo:precision} is the floating-point precision as an integer;
+@code{flo:radix.} is the flotaing-point radix as a flonum.
+@end defvr
+
+@defvr constant flo:error-bound
+@defvrx constant flo:log-error-bound
+@defvrx constant flo:ulp-of-one
+@defvrx constant flo:log-ulp-of-one
+@code{Flo:error-bound}, sometimes called the machine epsilon, is the
+maximum relative error of rounding to nearest:
+@iftex
+@tex
+$$
+  \max_x {\lvert x - \mathop{\rm fl}(x)\rvert \over \lvert x\rvert}
+  = {1 \over 2 r^{p-1}},
+$$
+@end tex
+@end iftex
+@ifnottex
+
+@example
+max |x - fl(x)|/|x| = 1/(2 r^(p-1)),
+@end example
+
+@end ifnottex
+where @math{r} is the floating-point radix and @math{p} is the
+floating-point precision.
+
+@code{Flo:ulp-of-one} is the distance from @math{1} to the next larger
+floating-point number, and is equal to @math{1/r^{p-1}}.
+
+@code{Flo:error-bound} is half @code{flo:ulp-of-one}.
+
+@code{Flo:log-error-bound} is the logarithm of @code{flo:error-bound},
+and @code{flo:log-ulp-of-one} is the logarithm of
+@code{flo:log-ulp-of-one}.
+@end defvr
+
+@deffn procedure flo:ulp flonum
+Returns the distance from @var{flonum} to the next floating-point
+number larger in magnitude with the same sign.
+For zero, this returns the smallest subnormal.
+For infinities, this returns positive infinity.
+For NaN, this returns the same NaN.
+
+@example
+(flo:ulp 1.)                    @result{}  2.220446049250313e-16
+(= (flo:ulp 1.) flo:ulp-of-one) @result{}  #t
+@end example
+@end deffn
+
+@defvr constant flo:normal-exponent-max
+@defvrx constant flo:normal-exponent-min
+@defvrx constant flo:subnormal-exponent-min
+Largest and smallest positive integer exponents of the radix in normal
+and subnormal floating-point numbers.
+
+@itemize @bullet
+@item
+@code{Flo:normal-exponent-max} is the largest positive integer such
+that @code{(expt flo:radix. flo:normal-exponent-max)} does not
+overflow.
+
+@item
+@code{Flo:normal-exponent-min} is the smallest positive integer such
+that @code{(expt flo:radix. flo:normal-exponent-min)} is a normal
+floating-point number.
+
+@item
+@code{Flo:subnormal-exponent-min} is the smallest positive integer such
+that @code{(expt flo:radix. flo:subnormal-exponent-min)} is nonzero;
+this is also the smallest positive floating-point number.
+@end itemize
+@end defvr
+
+@defvr constant flo:largest-positive-normal
+@defvrx constant flo:smallest-positive-normal
+@defvrx constant flo:smallest-positive-subnormal
+Smallest and largest normal and subnormal numbers in magnitude.
+@end defvr
+
+@defvr constant flo:greatest-normal-exponent-base-e
+@defvrx constant flo:greatest-normal-exponent-base-2
+@defvrx constant flo:greatest-normal-exponent-base-10
+@defvrx constant flo:least-normal-exponent-base-e
+@defvrx constant flo:least-normal-exponent-base-2
+@defvrx constant flo:least-normal-exponent-base-10
+@defvrx constant flo:least-subnormal-exponent-base-e
+@defvrx constant flo:least-subnormal-exponent-base-2
+@defvrx constant flo:least-subnormal-exponent-base-10
+Least and greatest exponents of normal and subnormal floating-point
+numbers, as floating-point numbers.
+For example, @code{flo:greatest-normal-exponent-base-2} is the
+greatest floating-point number such that @code{(expt
+2. flo:greatest-normal-exponent-base-2)} does not overflow and is a
+normal floating-point number.
+@end defvr
+
+@deffn procedure flo:total< x1 x2
+@deffnx procedure flo:total-mag< x1 x2
+@deffnx procedure flo:total-order x1 x2
+@deffnx procedure flo:total-order-mag x1 x2
+These procedures implement the @acronym{IEEE 754-2008} total ordering
+on floating-point values and their magnitudes.
+Here the ``magnitude'' of a floating-point value is a floating-point
+value with positive sign bit and everything else the same; e.g.,
+@code{+nan.123} is the ``magnitude'' of @code{-nan.123} and @code{0.0}
+is the ``magnitude'' of @code{-0.0}.
+
+The total ordering has little to no numerical meaning and should be
+used only when an arbitrary choice of total ordering is required for
+some non-numerical reason.
+
+@itemize @bullet
+@item
+@code{Flo:total<} returns true if @var{x1} precedes @var{x2}.
+
+@item
+@code{Flo:total-mag<} returns true if the magnitude of @var{x1}
+precedes the magnitude of @var{x2}.
+
+@item
+@code{Flo:total-order} returns @math{-1} if @var{x1} precedes
+@var{x2}, @math{0} if they are the same floating-point value
+(including sign of zero, or sign and payload of NaN), and @math{+1} if
+@var{x1} follows @var{x2}.
+
+@item
+@code{Flo:total-order-mag} returns @math{-1} if the magnitude of
+@var{x1} precedes the magnitude of @var{x2}, etc.
+@end itemize
+@end deffn
+
+@deffn procedure flo:make-nan negative? quiet? payload
+@deffnx procedure flo:nan-quiet? nan
+@deffnx procedure flo:nan-payload nan
+@code{Flo:make-nan} creates a NaN given the sign bit, quiet bit, and
+payload.
+@var{Negative?} and @var{quiet?} must be booleans, and @var{payload}
+must be an unsigned @math{(p-2)}-bit integer, where @math{p} is the
+floating-point precision.
+If @var{quiet?} is false, @var{payload} must be nonzero.
+
+@example
+@group
+(flo:sign-negative? (flo:make-nan @var{negative?} @var{quiet?} @var{payload}))
+                               @result{}  @var{negative?}
+(flo:nan-quiet? (flo:make-nan @var{negative?} @var{quiet?} @var{payload}))
+                               @result{}  @var{quiet?}
+(flo:nan-payload (flo:make-nan @var{negative?} @var{quiet?} @var{payload}))
+                               @result{}  @var{payload}
+
+(flo:make-nan #t #f 42)        @result{}  -snan.42
+(flo:sign-negative? +nan.123)  @result{}  #f
+(flo:nan-quiet? +nan.123)      @result{}  #t
+(flo:nan-payload +nan.123)     @result{}  123
+@end group
+@end example
+@end deffn
+
+@node Floating-Point Environment, Floating-Point Exceptions, Flonum Operations, Fixnum and Flonum Operations
+@subsection Floating-Point Environment
+
+@cindex floating-point environment
+The @acronym{IEEE 754-2008} computation model includes a persistent
+rounding mode, exception flags, and exception-handling modes.
+In MIT/GNU Scheme, the floating-point environment is per-thread.
+However, because saving and restoring the floating-point environment
+is expensive, it is maintained only for those threads that have
+touched the floating-point environment explicitly, either:
+
+@itemize @bullet
+@item
+during a procedure such as @code{flo:with-exceptions-trapped} that
+establishes a change to the floating-point environment for a dynamic
+extent, or
+
+@item
+after @code{flo:set-environment!} to a non-default environment (but
+not after @code{flo:set-environment!} to the default environment), or
+
+@item
+after various other procedures such as @code{flo:clear-exceptions!}
+that explicitly change the floating-point environment.
+@end itemize
+
+@noindent
+@cindex floating-point environment, default
+@cindex default environment, floating-point
+The default environment is as in @acronym{IEEE 754-2008}: no
+exceptions are trapped, and rounding is to nearest with ties broken to
+even.
+The set of exception flags in the default environment is indeterminate
+--- callers must enter a per-thread environment, e.g. by calling
+@code{flo:clear-exceptions!}, before acting on the exception flags.
+Like the default environment, a per-thread environment initially has
+no exceptions trapped and rounds to nearest with ties to even.
+
+A @strong{floating-point environment} descriptor is a
+machine-dependent object representing the @acronym{IEEE 754-2008}
+floating-point rounding mode, exception flags, and exception-handling
+mode.
+Users should not inspect a floating-point environment descriptor other
+than to use it with the procedures here; its representation may vary
+from system to system.
+
+@deffn procedure flo:default-environment
+Returns a descriptor for the default environment, with no exceptions
+trapped and round-to-nearest/ties-to-even.
+@end deffn
+
+@deffn procedure flo:with-default-environment thunk
+Calls @var{thunk} in the default floating-point environment, and
+restores the caller's floating-point environment afterward.
+Equivalent to:
+
+@example
+@group
+(flo:preserving-environment
+ (lambda ()
+   (flo:set-environment! (flo:default-environment))
+   (thunk)))
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:environment
+@deffnx procedure flo:set-environment! floenv
+@deffnx procedure flo:update-environment! floenv
+@code{Flo:environment} returns a descriptor for the current
+floating-point environment.
+@code{Flo:set-environment!} replaces the current floating-point
+environment by @var{floenv}.
+@code{Flo:update-environment!} does likewise, but re-raises any
+exceptions that were already raised in the current floating-point
+environment, which may cause a trap if @var{floenv} also traps them.
+
+@code{Flo:update-environment!} is usually used together with
+@code{flo:defer-exception-traps!} to defer potentially trapping on
+exceptions in a large intermediate computation until the end.
+@end deffn
+
+@deffn procedure flo:preserving-environment thunk
+Saves the current floating-point environment if any and calls
+@var{thunk}.
+On exit from @var{thunk}, including non-local exit, saves
+@var{thunk}'s floating-point environment and restores the original
+floating-point environment as if with @code{flo:set-environment!}.
+On re-entry into @var{thunk}, restores @var{thunk}'s floating-point
+environment.
+
+@strong{Note:} @code{Flo:preserving-environment} @emph{does not} enter
+a per-thread environment.
+If the current thread is in the default environment, the exception
+flags are indeterminate, and remain so inside
+@code{flo:preserving-environment}.
+Callers interested in using the exception flags should start inside
+@code{flo:preserving-environment} by clearing them with
+@code{flo:clear-exceptions!}.
+@end deffn
+
+@node Floating-Point Exceptions, Floating-Point Rounding Mode, Floating-Point Environment, Fixnum and Flonum Operations
+@subsection Floating-Point Exceptions
+
+In @acronym{IEEE 754-2008}, floating-point operations such as
+arithmetic may raise exceptions.
+This sets a flag in the floating-point environment that is maintained
+until it is cleared.
+Many machines can also be configured to trap on exceptions, which in
+Scheme leads to signalling a condition.
+(Not all CPUs support trapping exceptions --- for example, most ARMv8
+CPUs do not.)
+In the default environment, no exceptions are trapped.
+
+Floating-point exceptions and sets of floating-point exceptions are
+represented by small integers, whose interpretation is
+machine-dependent --- for example, the invalid-operation exception
+may be represented differently on PowerPC and AMD x86-64 CPUs.
+The number for a floating-point exception is the same as the number
+for a set of exceptions containing only that one; the bitwise-AND of
+two sets is their intersection, the bitwise-IOR is their union, etc.
+The procedures @code{flo:exceptions->names} and
+@code{flo:names->exceptions} convert between machine-dependent integer
+representations and machine-independent lists of human-readable
+symbols.
+
+The following exceptions are recognized by MIT/GNU Scheme:
+
+@table @asis
+@item inexact-result
+@cindex inexact-result exception
+Raised when the result of a floating-point computation is not a
+floating-point number and therefore must be rounded.
+
+The inexact-result exception is never trappable in MIT/GNU Scheme.
+
+@item underflow
+@cindex underflow exception
+Raised when the result of a floating-point computation is too small in
+magnitude to be represented by a normal floating-point number, and is
+therefore rounded to a subnormal or zero.
+
+@item overflow
+@cindex overflow exception
+Raised when the result of a floating-point computation is too large in
+magnitude to be represented by a floating-point number, and is
+therefore rounded to infinity.
+
+@item divide-by-zero
+@cindex divide-by-zero exception
+Raised on division of a nonzero finite real number by a zero real
+number, or logarithm of zero, or other operation that has an unbounded
+limit at a point like division by a divisor approaching zero.
+
+@item invalid-operation
+@cindex invalid-operation exception
+@cindex signalling NaN
+@cindex quiet NaN
+Raised when the input to a floating-point computation is nonsensical,
+such as division of zero by zero, or real logarithm of a negative
+number.
+The result of an invalid-operation is a NaN.
+Also raised when the input to a floating-point operation is a
+signalling NaN, but not for a quiet NaN.
+
+@item subnormal-operand
+@cindex subnormal-operand exception
+Raised when an operand in a floating-point operation is subnormal.
+
+(This is not a standard @acronym{IEEE 754-2008} exception.
+It is supported by Intel CPUs.)
+@end table
+
+@deffn procedure flo:supported-exceptions
+Returns the set of exceptions that are supported on the current
+machine.
+@end deffn
+
+@deffn procedure flo:trappable-exceptions
+Returns the set of exceptions that can be trapped on the current
+machine.
+This is usually the same as the supported exceptions, except for
+inexact-result, which is never trappable in MIT/GNU Scheme.
+@end deffn
+
+@deffn procedure flo:exception:divide-by-zero
+@deffnx procedure flo:exception:inexact-result
+@deffnx procedure flo:exception:invalid-operation
+@deffnx procedure flo:exception:overflow
+@deffnx procedure flo:exception:subnormal-operand
+@deffnx procedure flo:exception:underflow
+Returns the specified floating-point exception number.
+On machines that do not support a particular exception, the
+corresponding procedure simply returns @code{0}.
+@end deffn
+
+@deffn procedure flo:exceptions->names excepts
+@deffnx procedure flo:names->exceptions list
+These procedures convert between a machine-dependent small integer
+representation of a set of exceptions, and a representation of a set
+of exceptions by a list of human-readable symbols naming them.
+
+@example
+(flo:preserving-environment
+ (lambda ()
+   (flo:clear-exceptions! (flo:supported-exceptions))
+   (flo:/ (identity-procedure 1.) 0.)
+   (flo:exceptions->names
+    (flo:test-exceptions (flo:supported-exceptions)))))
+                               @result{}  (divide-by-zero)
+@end example
+@end deffn
+
+@deffn procedure flo:test-exceptions excepts
+Returns the set of exceptions in @var{excepts} that are currently
+raised.
+
+In the default environment, the result is indeterminate, and may
+be affected by floating-point operations in other threads.
+@end deffn
+
+@deffn procedure flo:clear-exceptions! excepts
+@deffnx procedure flo:raise-exceptions! excepts
+Clears or raises the exceptions in @var{excepts}, entering a
+per-thread environment.
+Other exceptions are unaffected.
+@end deffn
+
+@deffn procedure flo:save-exception-flags
+@deffnx procedure flo:restore-exception-flags! exceptflags
+@deffnx procedure flo:test-exception-flags exceptflags excepts
+@code{Flo:save-exception-flags} returns a machine-dependent
+representation of the currently trapped and raised exceptions.
+@code{Flo:restore-exception-flags!} restores it, entering a per-thread
+environment.
+@code{Flo:test-exception-flags} returns the set of exceptions in
+@var{excepts} that are raised in @var{exceptflags}.
+
+@var{Exceptflags} is @emph{not} the same as a set of exceptions.
+It is opaque and machine-dependent and should not be used except with
+@code{flo:restore-exception-flags!} and
+@code{flo:test-exception-flags}.
+
+@strong{Bug:} @code{Flo:test-exception-flags} is unimplemented.
+@end deffn
+
+@deffn procedure flo:have-trap-enable/disable?
+Returns true if trapping floating-point exceptions is supported on
+this machine.
+@end deffn
+
+@deffn procedure flo:default-trapped-exceptions
+Returns the set of exceptions that are trapped in the default
+floating-point environment.
+Equivalent to @code{(flo:names->exceptions '())}, or simply @code{0},
+since by default, no exceptions are trapped.
+@end deffn
+
+@deffn procedure flo:trapped-exceptions
+Returns the set of exceptions that are currently trapped.
+@end deffn
+
+@deffn procedure flo:trap-exceptions! excepts
+@deffnx procedure flo:untrap-exceptions! excepts
+@deffnx procedure flo:set-trapped-exceptions! excepts
+@code{Flo:trap-exceptions!} requests that any exceptions in the set
+@var{excepts} be trapped, in addition to all of the ones that are
+currently trapped.
+@code{Flo:untrap-exceptions!} requests that any exceptions in the set
+@var{excepts} not be trapped.
+@code{Flo:set-trapped-exceptions!} replaces the set of trapped
+exceptions altogether by @var{excepts}.
+All three procedures enter a per-thread environment.
+
+@example
+@group
+(define (flo:trap-exceptions! excepts)
+  (flo:set-trapped-exceptions!
+   (fix:or (flo:trapped-exceptions) excepts)))
+
+(define (flo:untrap-exceptions! excepts)
+  (flo:set-trapped-exceptions!
+   (fix:andc (flo:trapped-exceptions) excepts)))
+
+(define (flo:set-trapped-exceptions! excepts)
+  (flo:trap-exceptions! excepts)
+  (flo:untrap-exceptions!
+   (fix:andc (flo:supported-exceptions) excepts)))
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:with-exceptions-trapped excepts thunk
+@deffnx procedure flo:with-exceptions-untrapped excepts thunk
+@deffnx procedure flo:with-trapped-exceptions excepts thunk
+Dynamic-extent analogues of @code{flo:trap-exceptions!},
+@code{flo:untrap-exceptions!}, and @code{flo:set-trapped-exceptions!}.
+These call @var{thunk} with their respective changes to the set of
+trapped exceptions in a per-thread environment, and restore the
+environment on return or non-local exit.
+@end deffn
+
+@deffn procedure flo:defer-exception-traps!
+Saves the current floating-point environment, clears all raised
+exceptions, disables all exception traps, and returns a descriptor for
+the saved floating-point environment.
+
+@code{Flo:defer-exception-traps!} is typically used together with
+@code{flo:update-environment!}, to trap any exceptions that the caller
+had wanted trapped only after a long intermediate computation.
+This pattern is captured in @code{flo:deferring-exception-traps}.
+@end deffn
+
+@deffn procedure flo:deferring-exception-traps thunk
+Calls @var{thunk}, but defers trapping on any exceptions it raises
+until it returns.
+Equivalent to:
+
+@example
+(flo:preserving-environment
+ (lambda ()
+   (let ((environment (flo:defer-exception-traps!)))
+     (begin0 (@var{thunk})
+       (flo:update-environment! environment)))))
+@end example
+@end deffn
+
+@deffn procedure flo:ignoring-exception-traps thunk
+Calls @var{thunk} with all exceptions untrapped and unraised.
+Equivalent to:
+
+@example
+@group
+(flo:preserving-environment
+ (lambda ()
+   (flo:defer-exception-traps!)
+   (@var{thunk})))
+@end group
+@end example
+@end deffn
+
+@node Floating-Point Rounding Mode,  , Floating-Point Exceptions, Fixnum and Flonum Operations
+@subsection Floating-Point Rounding Mode
+
+@acronym{IEEE 754-2008} supports four rounding modes, which determine
+the answer given by a floating-point computation when the exact result
+lies between two floating-point numbers but is not a floating-point
+number itself:
+
+@table @code
+@item to-nearest
+Round to the nearest floating-point number.
+If there are two equidistant ones, choose the one whose least
+significant digit is even.
+Also known as ``round-to-nearest/ties-to-even''.
+
+@item toward-zero
+Round to the floating-point number closest to zero.
+
+@item downward
+Round to the greatest floating-point number below.
+
+@item upward
+Round to the least floating-point number above.
+@end table
+
+@strong{Warning:} Not all procedures in MIT/GNU Scheme respect the
+rounding mode.
+Only the basic arithmetic operations --- @math{+}, @math{-}, @math{*},
+@math{/}, and sqrt --- will reliably respect it.
+The main purpose of changing the rounding mode is to diagnose
+numerical instability by injecting small perturbations throughout the
+computation.
+
+@strong{Bug:} It would be nice if we had ``round-to-odd'', where any
+inexact result is rounded to the nearest @emph{odd} floating-point
+number, for implementing ``doubled''-precision algorithms.
+But we don't.
+Sorry.
+
+@deffn procedure flo:default-rounding-mode
+Returns a symbol for the default rounding mode, which is always
+@code{to-nearest}.
+@end deffn
+
+@deffn procedure flo:rounding-modes
+Returns a list of the supported rounding modes as symbols.
+@end deffn
+
+@deffn procedure flo:rounding-mode
+@deffnx procedure flo:set-rounding-mode! mode
+Gets or sets the current rounding mode as a symbol, entering a
+per-thread environment.
+@end deffn
+
+@deffn procedure flo:with-rounding-mode mode thunk
+Call @var{thunk} in a per-thread environment with the rounding mode
+set to @var{mode}.
+On return, the floating-point environment, including rounding mode, is
+restored to what it was before.
+
+Non-local exit from and re-entrance to @var{thunk} behaves as if the
+call is surrounded by @code{flo:preserving-environment}
+(@pxref{Floating-Point Environment}).
+@end deffn
+
+@node Random Number Generation,  , Fixnum and Flonum Operations, Numbers
+@section Random Number Generation
+@cindex random number generation
+@cindex pseudorandom number generation
+@cindex number, pseudorandom generation
+
+MIT/GNU Scheme provides a facility for random number generation.
+The current implementation uses the ChaCha stream cipher, reseeding
+itself at each request so that past outputs cannot be distinguished
+from uniform random even if the state of memory is compromised in the
+future.
+
+The interface described here is a mixture of the Common Lisp and SRFI
+27 systems.
+
+@deffn procedure random m [state]
+The argument @var{m} must be either an exact positive integer, or an
+inexact positive real.
+
+@itemize @bullet
+@item
+If @var{m} is an exact positive integer, then @code{random} returns an
+exact nonnegative integer below @var{m} with uniform distribution.
+
+@item
+If @var{m} is an inexact positive real, then @code{random} returns an
+inexact real in the interval @math{[0, m)} with uniform distribution.
+@end itemize
+
+If @var{state} is given and not @code{#f}, it must be a random-state
+object; otherwise, it defaults to the @code{default-random-source}.
+This object is used to maintain the state of the pseudorandom number
+generator and is altered as a side effect of the @code{random}
+procedure.
+
+Use of the default random state requires synchronization between
+threads, so it is better for multithreaded programs to use explicit
+states.
+
+@example
+@group
+(random 1.0)    @result{}  .32744744667719056
+(random 1.0)    @result{}  .01668326768172354
+(random 10)     @result{}  3
+(random 10)     @result{}  8
+(random 100)    @result{}  38
+(random 100)    @result{}  63
+@end group
+@end example
+@end deffn
+
+@deffn procedure flo:random-unit-closed state
+@deffnx procedure flo:random-unit-open state
+@var{State} must be a random-state object.
+@code{Flo:random-unit-closed} returns a flonum in the closed interval
+@math{[0,1]} with uniform distribution.
+In practical terms, the result is in the half-closed interval
+@math{(0,1]} because the probability of returning 0 is
+@math{2^{-1075}}, far below the standard probability @math{2^{-128}}
+that means ``never'' in cryptographic engineering terms.
+
+@code{Flo:random-unit-open} is like @code{flo:random-unit-closed}, but
+it explicitly rejects @code{0.0} and @code{1.0} as outputs, so that
+the result is a floating-point number in the open interval
+@math{(0,1)}.
+@code{(flo:random-unit-open)} is equivalent @code{(random 1.)}, except
+that it is faster.
+
+Callers should generally use @code{flo:random-unit-closed}, because
+for the uniform distribution on the interval @math{[0,1]} of real
+numbers, the probability of a real number that is rounded to the
+floating-point @code{1.0} is the small but nonnegligible
+@math{2^{-54}}, and arithmetic downstream should be prepared to handle
+results that are rounded to @code{1.0} much more readily than results
+that are rounded to @code{0.0} --- in other words, a requirement to
+use @code{flo:random-unit-open} is evidence of bad numerics
+downstream.
+@end deffn
+
+@deffn procedure flo:random-unit state
+@strong{Deprecated} alias for @code{flo:random-unit-open}.
+@end deffn
+
+@deffn procedure random-bytevector n [state]
+Returns a bytevector of @var{n} bytes drawn independently uniformly at
+random from @var{state}.
+@end deffn
+
+@deffn procedure random-bytevector! bytevector [start end state]
+Replaces the bytes in @var{bytevector} from @var{start} to @var{end}
+by bytes drawn independently uniformly at random from @var{state}.
+@end deffn
+
+The next three definitions concern random-state objects.  In addition to
+these definitions, it is important to know that random-state objects are
+specifically designed so that they can be saved to disk using the
+@code{fasdump} procedure, and later restored using the @code{fasload}
+procedure.  This allows a particular random-state object to be saved in
+order to replay a particular pseudorandom sequence.
+
+@defvr variable *random-state*
+This variable is @strong{deprecated}; pass an explicit state instead.
+@end defvr
+
+@deffn procedure make-random-state [state]
+This procedure returns a new random-state object, suitable for use as
+as the @var{state} argument to @code{random}.  If @var{state} is not
+given or @code{#f}, @code{make-random-state} returns a @emph{copy} of
+@code{default-random-source}.  If @var{state} is a random-state
+object, a copy of that object is returned.  If @var{state} is
+@code{#t}, then a new random-state object is returned that has been
+``randomly'' initialized by some means (such as by a time-of-day
+clock).
+@end deffn
+
+@deffn procedure random-state? object
+Returns @code{#t} if @var{object} is a random-state object, otherwise
+returns @code{#f}.
+@end deffn
+
+@deffn procedure export-random-state state
+@deffnx procedure import-random-state state
+@code{Export-random-state} returns an external representation of a
+random state --- an object that can be safely read and written with
+@code{read} and @code{write}, consisting only of nested lists,
+vectors, symbols, and small exact integers.
+@code{Import-random-state} creates a random state from its external
+representation.
+@end deffn
+
+In the MIT/GNU Scheme implementation of the SRFI 27 API, a ``random
+source'' happens to be the same as a random state, but users should
+not rely on this.
+
+@deffn procedure make-random-source
+[SRFI 27]
+Returns a random source.
+Every random source created by @code{make-random-source} returns the
+same sequence of outputs unless modified by
+@code{random-source-state-set!}, @code{random-source-randomize!}, or
+@code{random-source-pseudo-randomize!}.
+@end deffn
+
+@deffn procedure random-source? object
+[SRFI 27]
+Returns @code{#t} if @var{object} is a random source, otherwise
+returns @code{#f}.
+@end deffn
+
+@deffn constant default-random-source
+[SRFI 27]
+The default random source, used by the various random procedures if no
+explicit state is specified and @code{*random-state*} is false.
+@end deffn
+
+@deffn procedure random-source-state-ref source
+@deffnx procedure random-source-state-set! source exported-state
+[SRFI 27]
+@code{Random-source-state-ref} returns an external representation of a
+random source --- an object that can be safely read and written with
+@code{read} and @code{write}, consisting only of nested lists,
+vectors, symbols, and small exact integers.
+@code{Random-source-state-set!} replaces the innards of @var{source}
+by the source represented by @var{exported-state} from
+@code{random-source-state-ref}.
+@end deffn
+
+@deffn procedure random-source-randomize! source
+[SRFI 27]
+Loads entropy from the environment into @var{source} so that its
+subsequent outputs are nondeterministic.
+
+@strong{Warning:} Most implementations of SRFI 27 @emph{do not} make
+subsequent outputs unpredictable with cryptography, so don't rely on
+this.
+@end deffn
+
+@deffn procedure random-source-pseudo-randomize! source i j
+[SRFI 27]
+The arguments @var{i} and @var{j} must be exact nonnegative integers
+below @math{2^{128}}.
+This procedure sets @var{source} to generate one of @math{2^{256}}
+distinct possible streams of output, so that if @var{i} and @var{j}
+are chosen uniformly at random, it is hard to distinguish the outputs
+of the source from uniform random.
+
+@strong{Warning:} Most implementations of SRFI 27 @emph{do not} make
+it hard to distinguish the outputs of the source from uniform random
+even if the indices @var{i} and @var{j} are uniform random, so don't
+rely on this.
+@end deffn
+
+@deffn procedure random-integer n
+[SRFI 27]
+Returns an exact nonnegative integer below @var{n} chosen uniformly at
+random.
+
+Equivalent to:
+
+@example
+((random-source-make-integers default-random-source) n)
+@end example
+@end deffn
+
+@deffn procedure random-real
+[SRFI 27]
+Returns an inexact real in the open interval @math{(0, 1)} with
+uniform distribution.
+
+Equivalent to:
+
+@example
+((random-source-make-reals default-random-source))
+@end example
+@end deffn
+
+@deffn procedure random-source-make-integers source
+[SRFI 27]
+Returns a procedure of one argument, @var{n}, that deterministically
+draws from @var{source} an exact nonnegative integer below @var{n} with
+uniform distribution.
+@end deffn
+
+@deffn procedure random-source-make-reals source [unit]
+[SRFI 27]
+Returns a procedure of zero arguments that deterministically draws
+from @var{source} an inexact real in the interval @math{(0,1)} with
+uniform distribution.
+If @var{unit} is specified, the results are instead uniform random
+integral multiples of @var{unit} in @math{(0,1)} and of the same
+exactness as @var{unit}.
+@end deffn

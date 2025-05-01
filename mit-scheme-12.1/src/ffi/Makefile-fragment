@@ -1,0 +1,13 @@
+#-*-Makefile-*-
+# ffi/Makefile-fragment
+
+TARGET_DIR = $(AUXDIR)/ffi
+
+# Install the FFI option.
+install:
+	rm -rf $(DESTDIR)$(TARGET_DIR)
+	$(mkinstalldirs) $(DESTDIR)$(TARGET_DIR)
+	$(INSTALL_COM) *.com $(DESTDIR)$(TARGET_DIR)/.
+	$(INSTALL_DATA) *.bci $(DESTDIR)$(TARGET_DIR)/.
+	$(INSTALL_DATA) ffi-*.pkd $(DESTDIR)$(TARGET_DIR)/.
+	$(INSTALL_DATA) make.scm $(DESTDIR)$(TARGET_DIR)/.

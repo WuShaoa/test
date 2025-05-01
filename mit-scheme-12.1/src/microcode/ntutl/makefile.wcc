@@ -1,0 +1,345 @@
+### -*- Makefile -*-
+###
+###     Copyright (C) 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993,
+###         1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+###         2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
+###         2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020,
+###         2021, 2022 Massachusetts Institute of Technology
+###
+###     This file is part of MIT/GNU Scheme.
+###
+###     MIT/GNU Scheme is free software; you can redistribute it
+###     and/or modify it under the terms of the GNU General Public
+###     License as published by the Free Software Foundation; either
+###     version 2 of the License, or (at your option) any later
+###     version.
+###
+###     MIT/GNU Scheme is distributed in the hope that it will be
+###     useful, but WITHOUT ANY WARRANTY; without even the implied
+###     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+###     PURPOSE.  See the GNU General Public License for more details.
+###
+###     You should have received a copy of the GNU General Public
+###     License along with MIT/GNU Scheme; if not, write to the Free
+###     Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+###     Boston, MA 02110-1301, USA.
+
+#### Makefile for Scheme under Win32 compiled by Watcom C/C++
+###  This makefile is meant to be used with Watcom make.
+
+USER_LIBS = library wsock32.lib
+
+CC = wcc386
+M4 = m4
+AS = wasm
+
+# Compiler options.
+# [DEBUG] marks options used for debugging.
+# [OPTIMIZE] marks options used for optimization.
+#
+# /6r		386 instructions, Pentium Pro timings, register-based args
+# /bd		build NT DLL
+# /bm		build multi-thread program
+# /bt=nt	build NT binary (default when host is NT)
+# /d1+		generate debug info [OPTIMIZE]
+# /d2		generate debug info [DEBUG]
+# /ei		generate enum `int'-sized (required for MS compatibility)
+# /fpi		generate in-line 387 insns, emulate if none (default)
+# /fp3		generate in-line 387 insns (default)
+# /hw		generate Watcom debug info (default)
+# /mf		use flat memory model (default)
+# /od		disable optimization (default with /d2)
+# /oe		enable in-line user-code expansion [OPTIMIZE]
+# /op		force IEEE floating-point semantics
+# /ox		enable various optimizations [OPTIMIZE]
+# /s		remove stack overflow checks
+# /w1		set warning-message level
+# /za99		undocumented option to enable partial C99 support
+# /zc		place literal strings in code segment
+# /ze		enable language extensions (default)
+# /zp4		use 4-byte alignment (required for MS compatibility)
+# /zq		operate quietly
+#
+# /DMIT_SCHEME	required to specialize some code
+# /DGUI		configure a console window
+# /DHAVE_CONFIG_H we have config.h
+# omitted: /DNO_CONST /Di386
+#
+# For debugging, uncomment next line and comment one following.
+#UTIL_CFLAGS = /6r /d2 /ei /op /s /w1 /zc /zp4 /zq
+UTIL_CFLAGS = /6r /d1+ /ei /oe /op /ox /s /w1 /za99 /zc /zp4 /zq
+CFLAGS = $(UTIL_CFLAGS) /bm /DMIT_SCHEME /DGUI /DHAVE_CONFIG_H /i=.
+
+# Linker options.
+#
+# debug all		include debug info in executable
+# option caseexact	use case-sensitive comparison for identifiers
+# option map		create a .map file
+# option quiet		operate quietly
+# option symfile	put debug info in .sym file
+LDFLAGS = debug all option caseexact option map option quiet
+
+# M4 options.
+#
+# -DWIN32	Specify Win32 operation.
+# -DWCC386R	Select Watcom 386 register-based conventions.
+M4FLAGS = -DWIN32 -DWCC386R
+
+# Assembler options.
+#
+# /bt=nt	build NT binary (default when host is NT)
+# /d1		generate debug info
+# /fpi		generate in-line 387 insns, emulate if none
+# /fp3		generate in-line 387 insns
+# /5p		generate code for 586 in protected mode
+# /mf		use flat memory model
+# /zq		operate quietly
+ASFLAGS = /bt=nt /d1 /fpi /fp3 /5p /mf /zq
+
+# Library Manager options.
+#
+# /b		Suppress backup file
+# /c		case-sensitive comparison
+# /n		produce a new output file
+# /q		operate quietly
+WLIB_FLAGS = /b /c /n /q
+
+all : scheme.exe
+
+.c.obj: .AUTODEPEND
+	$(CC) $(CFLAGS) $[@
+
+.asm.obj: .AUTODEPEND
+	$(AS) $(ASFLAGS) /fo=$^@ $[@
+
+CORE_SOURCES = &
+artutl.c &
+avltree.c &
+bignum.c &
+bigprm.c &
+bitstr.c &
+boot.c &
+char.c &
+cmpauxmd.asm &
+cmpint.c &
+cmpintmd.c &
+comutl.c &
+daemon.c &
+debug.c &
+dfloat.c &
+error.c &
+extern.c &
+fasdump.c &
+fasl.c &
+fasload.c &
+fixnum.c &
+floenv.c &
+flonum.c &
+gcloop.c &
+generic.c &
+hooks.c &
+hunk.c &
+intern.c &
+interp.c &
+intext.c &
+intprm.c &
+list.c &
+lookprm.c &
+lookup.c &
+memmag.c &
+missing.c &
+ntasutl.asm &
+ntenv.c &
+ntfile.c &
+ntfs.c &
+ntgui.c &
+ntio.c &
+ntproc.c &
+ntscreen.c &
+ntsig.c &
+ntsock.c &
+ntsys.c &
+nttop.c &
+nttrap.c &
+nttterm.c &
+nttty.c &
+obstack.c &
+option.c &
+osscheme.c &
+ostty.c &
+outf.c &
+prim.c &
+primutl.c &
+prntenv.c &
+prntfs.c &
+prntio.c &
+prosenv.c &
+prosfile.c &
+prosfs.c &
+prosio.c &
+prosproc.c &
+prosterm.c &
+prostty.c &
+pruxsock.c &
+ptrvec.c &
+purify.c &
+purutl.c &
+regex.c &
+rgxprim.c &
+scheme32.c &
+step.c &
+storage.c &
+string.c &
+syntax.c &
+sysprim.c &
+term.c &
+tparam.c &
+transact.c &
+utabmd.c &
+utils.c &
+vector.c &
+wind.c
+
+CORE_OBJECTS = &
+artutl.obj &
+avltree.obj &
+bignum.obj &
+bigprm.obj &
+bitstr.obj &
+boot.obj &
+char.obj &
+cmpauxmd.obj &
+cmpint.obj &
+cmpintmd.obj &
+comutl.obj &
+daemon.obj &
+debug.obj &
+dfloat.obj &
+error.obj &
+extern.obj &
+fasdump.obj &
+fasl.obj &
+fasload.obj &
+fixnum.obj &
+floenv.obj &
+flonum.obj &
+gcloop.obj &
+generic.obj &
+hooks.obj &
+hunk.obj &
+intern.obj &
+interp.obj &
+intext.obj &
+intprm.obj &
+list.obj &
+lookprm.obj &
+lookup.obj &
+memmag.obj &
+missing.obj &
+ntasutl.obj &
+ntenv.obj &
+ntfile.obj &
+ntfs.obj &
+ntgui.obj &
+ntio.obj &
+ntproc.obj &
+ntscreen.obj &
+ntsig.obj &
+ntsock.obj &
+ntsys.obj &
+nttop.obj &
+nttrap.obj &
+nttterm.obj &
+nttty.obj &
+obstack.obj &
+option.obj &
+osscheme.obj &
+ostty.obj &
+outf.obj &
+prim.obj &
+primutl.obj &
+prntenv.obj &
+prntfs.obj &
+prntio.obj &
+prosenv.obj &
+prosfile.obj &
+prosfs.obj &
+prosio.obj &
+prosproc.obj &
+prosterm.obj &
+prostty.obj &
+pruxsock.obj &
+ptrvec.obj &
+purify.obj &
+purutl.obj &
+regex.obj &
+rgxprim.obj &
+scheme32.obj &
+step.obj &
+storage.obj &
+string.obj &
+syntax.obj &
+sysprim.obj &
+term.obj &
+tparam.obj &
+transact.obj &
+utabmd.obj &
+utils.obj &
+vector.obj &
+wind.obj
+
+SOURCES = $(CORE_SOURCES)
+OBJECTS = $(CORE_OBJECTS) usrdef.obj
+SCHEME_LIB = $(USER_LIBS)
+
+scheme : scheme.exe .SYMBOLIC
+
+clean : .SYMBOLIC
+	-del *.obj
+	-del *.exe
+	-del *.exp
+	-del *.rbj
+	-del *.res
+	-del *.err
+	-del *.sym
+	-del *.map
+	-del usrdef.c
+
+# Must match "ntutl/wconfig.bat":
+unconfig : .SYMBOLIC
+	-del cmpauxmd.asm
+	-del cmpintmd.c
+	-del cmpintmd-config.h
+	-del cmpintmd.h
+	-del makefile
+	-del config.h
+	-del float.h
+	-del limits.h
+	-del ntdialog.h
+	-del scheme16.c
+	-del scheme31.c
+	-del scheme32.c
+	-del scheme32.lbc
+	-del scheme32.lnk
+	-del ntdialog.dlg
+	-del *.ico
+	-del ntgui.rc
+	-del gc.cur
+
+scheme.exe : $(OBJECTS) ntgui.res
+	*wlink system nt_win name $^@ $(LDFLAGS) &
+	file { $(OBJECTS) } $(SCHEME_LIB)
+	wrc /q /ad /bt=nt ntgui.res $^@
+
+findprim.exe : findprim.obj
+	wlink system nt $(LDFLAGS) name $^@ file $[@
+
+findprim.obj : findprim.c
+	$(CC) $(UTIL_CFLAGS) $[@
+
+# Update the resource if necessary
+ntgui.res : ntgui.rc ntgui.h ntdialog.dlg ntdialog.h
+	wrc /q /ad /bt=nt /r /x /D__WATCOMC__ /i=$(%WATCOM)\h\nt $[@
+
+usrdef.c : $(SOURCES) findprim.exe
+	.\findprim $(SOURCES) > $^@

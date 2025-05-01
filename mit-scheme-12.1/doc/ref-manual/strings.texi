@@ -1,0 +1,1549 @@
+@node Strings, Lists, Characters, Top
+@chapter Strings
+
+@menu
+* Searching and Matching Strings::
+* Regular Expressions::
+@end menu
+
+@cindex string, character (defn)
+@cindex external representation, for string
+@cindex " as external representation
+@cindex double quote, as external representation
+@cindex \ as escape character in string
+@cindex backslash, as escape character in string
+@cindex escape character, for string
+@findex "
+Strings are sequences of characters.  Strings are written as sequences
+of characters enclosed within quotation marks (@code{"}).  Within a
+string literal, various escape sequences represent characters other
+than themselves.  Escape sequences always start with a backslash
+(@code{\}):
+
+@display
+@group
+@code{\a} : alarm, U+0007
+@code{\b} : backspace, U+0008
+@code{\t} : character tabulation, U+0009
+@code{\n} : linefeed, U+000A
+@code{\r} : return, U+000D
+@code{\"} : double quote, U+0022
+@code{\\} : backslash, U+005C
+@code{\|} : vertical line, U+007C
+@code{\}@var{intraline-whitespace}* @var{line-ending} @var{intraline-whitespace}*
+     : nothing
+@code{\x}@var{hex-scalar-value}@code{;}
+     : specified character (note the terminating semi-colon).
+@end group
+@end display
+@findex \a
+@findex \b
+@findex \t
+@findex \n
+@findex \r
+@findex \"
+@findex \\
+@findex \|
+@findex \x
+
+The result is unspecified if any other character in a string occurs
+after a backslash.
+
+Except for a line ending, any character outside of an escape sequence
+stands for itself in the string literal.  A line ending which is
+preceded by @code{\}@var{intraline-whitespace} expands to nothing
+(along with any trailing intraline whitespace), and can be used to
+indent strings for improved legibility. Any other line ending has the
+same effect as inserting a @code{\n} character into the string.
+
+Examples:
+
+@example
+@group
+"The word \"recursion\" has many meanings."
+"Another example:\ntwo lines of text"
+"Here's text \
+   containing just one line"
+"\x03B1; is named GREEK SMALL LETTER ALPHA."
+@end group
+@end example
+
+@cindex length, of string (defn)
+@cindex index, of string (defn)
+@cindex valid index, of string (defn)
+@cindex string length (defn)
+@cindex string index (defn)
+The @emph{length} of a string is the number of characters that it
+contains.  This number is an exact, non-negative integer that is fixed
+when the string is created.  The @dfn{valid indexes} of a string are
+the exact non-negative integers less than the length of the string.
+The first character of a string has index 0, the second has index 1,
+and so on.
+
+@cindex case sensitivity, of string operations
+@cindex -ci, in string procedure name
+Some of the procedures that operate on strings ignore the difference
+between upper and lower case.  The names of the versions that ignore
+case end with @samp{-ci} (for ``case insensitive'').
+
+Implementations may forbid certain characters from appearing in
+strings.  However, with the exception of @code{#\null},
+@acronym{ASCII} characters must not be forbidden.  For example, an
+implementation might support the entire Unicode repertoire, but only
+allow characters U+0001 to U+00FF (the Latin-1 repertoire without
+@code{#\null}) in strings.
+
+Implementation note: MIT/GNU Scheme allows any ``bitless'' character
+to be stored in a string.  In effect this means any character with a
+Unicode code point, including surrogates.  String operations that
+accept characters automatically strip their bucky bits.
+
+It is an error to pass such a forbidden character to
+@code{make-string}, @code{string}, @code{string-set!}, or
+@code{string-fill!}, as part of the list passed to
+@code{list->string}, or as part of the vector passed to
+@code{vector->string}, or in UTF-8 encoded form within a bytevector
+passed to @code{utf8->string}.  It is also an error for a procedure
+passed to @code{string-map} to return a forbidden character, or for
+@code{read-string} to attempt to read one.
+
+@cindex mutable string
+@cindex immutable string
+MIT/GNU Scheme supports both @dfn{mutable} and @dfn{immutable}
+strings.  Procedures that mutate strings, in particular
+@code{string-set!} and @code{string-fill!}, will signal an error if
+given an immutable string.  Nearly all procedures that return strings
+return immutable strings; notable exceptions are @code{make-string}
+and @code{string-copy}, which always return mutable strings, and
+@code{string-builder} which gives the programmer the ability to choose
+mutable or immutable results.
+
+@deffn {standard procedure} string? obj
+Returns @code{#t} if @var{obj} is a string, otherwise returns @code{#f}.
+@end deffn
+
+@deffn {standard procedure} make-string k [char]
+The @code{make-string} procedure returns a newly allocated mutable
+string of length @var{k}.  If @var{char} is given, then all the
+characters of the string are initialized to @var{char}, otherwise the
+contents of the string are unspecified.
+@end deffn
+
+@deffn {extended standard procedure} string object @dots{}
+@deffnx procedure string* objects
+Returns an immutable string whose characters are the concatenation of
+the characters from the given objects.  Each object is converted to
+characters as if passed to the @code{display} procedure.
+
+This is an MIT/GNU Scheme extension to the standard @code{string} that
+accepts only characters as arguments.
+
+The procedure @code{string*} is identical to @code{string} but takes a
+single argument that's a list of objects, rather than multiple object
+arguments.
+@end deffn
+
+@deffn {standard procedure} string-length string
+Returns the number of characters in the given @var{string}.
+@end deffn
+
+@deffn {standard procedure} string-ref string k
+It is an error if @var{k} is not a valid index of @var{string}.
+
+The @code{string-ref} procedure returns character @var{k} of
+@var{string} using zero-origin indexing.  There is no requirement for
+this procedure to execute in constant time.
+@end deffn
+
+@deffn {standard procedure} string-set! string k char
+It is an error if @code{string} is not a mutable string or if @var{k}
+is not a valid index of @var{string}.
+
+The @code{string-set!} procedure stores @var{char} in element @var{k} of @var{string}.
+There is no requirement for this procedure to execute in constant time.
+
+@example
+@group
+(define (f) (make-string 3 #\*))
+(define (g) "***")
+(string-set! (f) 0 #\?)  @result{}  @r{@i{unspecified}}
+(string-set! (g) 0 #\?)  @result{}  @r{@i{error}}
+(string-set! (symbol->string 'immutable) 0 #\?)  @result{}  @r{@i{error}}
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} string=? string1 string2 string @dots{}
+Returns @code{#t} if all the strings are the same length and contain
+exactly the same characters in the same positions, otherwise returns
+@code{#f}.
+@end deffn
+
+@deffn {char library procedure} string-ci=? string1 string2 string @dots{}
+Returns @code{#t} if, after case-folding, all the strings are the same
+length and contain the same characters in the same positions,
+otherwise returns @code{#f}.  Specifically, these procedures behave as
+if @code{string-foldcase} were applied to their arguments before
+comparing them.
+@end deffn
+
+@deffn {standard procedure} string<? string1 string2 string @dots{}
+@deffnx {char library procedure} string-ci<? string1 string2 string @dots{}
+@deffnx {standard procedure} string>? string1 string2 string @dots{}
+@deffnx {char library procedure} string-ci>? string1 string2 string @dots{}
+@deffnx {standard procedure} string<=? string1 string2 string @dots{}
+@deffnx {char library procedure} string-ci<=? string1 string2 string @dots{}
+@deffnx {standard procedure} string>=? string1 string2 string @dots{}
+@deffnx {char library procedure} string-ci>=? string1 string2 string @dots{}
+These procedures return @code{#t} if their arguments are (respectively):
+monotonically increasing, monotonically decreasing,
+monotonically non-decreasing, or monotonically non-increasing.
+
+These predicates are required to be transitive.
+
+These procedures compare strings in an implementation-defined way.
+One approach is to make them the lexicographic extensions to strings
+of the corresponding orderings on characters.  In that case,
+@code{string<?}  would be the lexicographic ordering on strings
+induced by the ordering @code{char<?} on characters, and if the two
+strings differ in length but are the same up to the length of the
+shorter string, the shorter string would be considered to be
+lexicographically less than the longer string.  However, it is also
+permitted to use the natural ordering imposed by the implementation's
+internal representation of strings, or a more complex locale-specific
+ordering.
+
+In all cases, a pair of strings must satisfy exactly one of
+@code{string<?}, @code{string=?}, and @code{string>?}, and must satisfy
+@code{string<=?} if and only if they do not satisfy @code{string>?} and
+@code{string>=?} if and only if they do not satisfy @code{string<?}.
+
+The @samp{-ci} procedures behave as if they applied
+@code{string-foldcase} to their arguments before invoking the
+corresponding procedures without @samp{-ci}.
+@end deffn
+
+@deffn procedure string-compare string1 string2 if-eq if-lt if-gt
+@deffnx procedure string-compare-ci string1 string2 if-eq if-lt if-gt
+@var{If-eq}, @var{if-lt}, and @var{if-gt} are procedures of no arguments
+(thunks).  The two strings are compared; if they are equal, @var{if-eq}
+is applied, if @var{string1} is less than @var{string2}, @var{if-lt} is
+applied, else if @var{string1} is greater than @var{string2},
+@var{if-gt} is applied.  The value of the procedure is the value of the
+thunk that is applied.
+
+@code{string-compare} distinguishes uppercase and lowercase letters;@*
+@code{string-compare-ci} does not.
+
+@example
+@group
+(define (cheer) (display "Hooray!"))
+(define (boo)   (display "Boo-hiss!"))
+(string-compare "a" "b"  cheer  (lambda() 'ignore)  boo)
+        @print{}  Hooray!
+        @result{}  @r{unspecified}
+@end group
+@end example
+@end deffn
+
+@deffn {char library procedure} string-upcase string
+@deffnx {char library procedure} string-downcase string
+@deffnx procedure string-titlecase string
+@deffnx {char library procedure} string-foldcase string
+These procedures apply the Unicode full string uppercasing,
+lowercasing, titlecasing, and case-folding algorithms to their
+arguments and return the result.  In certain cases, the result differs
+in length from the argument.  If the result is equal to the argument
+in the sense of @code{string=?}, the argument may be returned.  Note
+that language-sensitive mappings and foldings are not used.
+
+The Unicode Standard prescribes special treatment of the Greek letter
+@math{\Sigma}, whose normal lower-case form is @math{\sigma} but which
+becomes @math{\varsigma} at the end of a word.  See
+@uref{http://www.unicode.org/reports/tr44/, UAX #44} (part of the
+Unicode Standard) for details.  However, implementations of
+@code{string-downcase} are not required to provide this behavior, and
+may choose to change @math{\Sigma} to @math{\sigma} in all cases.
+@end deffn
+
+@deffn procedure string-upper-case? string
+@deffnx procedure string-lower-case? string
+These procedures return @code{#t} if all the letters in the string are
+lower case or upper case, otherwise they return @code{#f}.  The string
+must contain at least one letter or the procedures return @code{#f}.
+
+@example
+@group
+(map string-upper-case? '(""    "A"    "art"  "Art"  "ART"))
+                       @result{} (#f    #t     #f     #f     #t)
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} substring string [start [end]]
+Returns an immutable copy of the part of the given @var{string}
+between @var{start} and @var{end}.
+@end deffn
+
+@deffn procedure string-slice string [start [end]]
+@cindex slice, of string
+@cindex string slice
+Returns a @dfn{slice} of @var{string}, restricted to the range of
+characters specified by @var{start} and @var{end}.  The returned slice
+will be mutable if @code{string} is mutable, or immutable if
+@code{string} is immutable.
+
+A slice is a kind of string that provides a view into another string.
+The slice behaves like any other string, but changes to a mutable
+slice are reflected in the original string and vice versa.
+
+@example
+@group
+(define foo (string-copy "abcde"))
+foo @result{} "abcde"
+
+(define bar (string-slice foo 1 4))
+bar @result{} "bcd"
+
+(string-set! foo 2 #\z)
+foo @result{} "abzde"
+bar @result{} "bzd"
+
+(string-set! bar 1 #\y)
+bar @result{} "byd"
+foo @result{} "abyde"
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} string-append string @dots{}
+@deffnx procedure string-append* strings
+Returns an immutable string whose characters are the concatenation of
+the characters in the given strings.
+
+The non-standard procedure @code{string-append*} is identical to
+@code{string-append} but takes a single argument that's a list of
+strings, rather than multiple string arguments.
+@end deffn
+
+@deffn {standard procedure} string->list string [start [end]]
+@deffnx {standard procedure} list->string list
+It is an error if any element of @var{list} is not a character.
+
+The @code{string->list} procedure returns a newly allocated list of
+the characters of @var{string} between @var{start} and @var{end}.
+@code{list->string} returns an immutable string formed from the
+elements in the list @var{list}.  In both procedures, order is
+preserved.  @code{string->list} and @code{list->string} are inverses
+so far as @code{equal?} is concerned.
+@end deffn
+
+@deffn {standard procedure} string-copy string [start [end]]
+Returns a newly allocated mutable copy of the part of the given
+@var{string} between @var{start} and @var{end}.
+@end deffn
+
+@deffn {standard procedure} string-copy! to at from [start [end]]
+It is an error if @var{to} is not a mutable string or if @var{at} is
+less than zero or greater than the length of @var{to}.  It is also an
+error if @code{(- (string-length @var{to}) @var{at})} is less than
+@code{(- @var{end} @var{start})}.
+
+Copies the characters of string @var{from} between @var{start} and
+@var{end} to string @var{to}, starting at @var{at}.  The order in
+which characters are copied is unspecified, except that if the source
+and destination overlap, copying takes place as if the source is first
+copied into a temporary string and then into the destination.  This
+can be achieved without allocating storage by making sure to copy in
+the correct direction in such circumstances.
+
+@example
+@group
+(define a "12345")
+(define b (string-copy "abcde"))
+(string-copy! b 1 a 0 2) @result{} 3
+b @result{} "a12de"%
+@end group
+@end example
+
+Implementation note: in MIT/GNU Scheme @code{string-copy!} returns the
+value @code{(+ @var{at} (- @var{end} @var{start}))}.
+@end deffn
+
+@deffn {standard procedure} string-fill! string fill [start [end]]
+It is an error if @var{string} is not a mutable string or if
+@var{fill} is not a character.
+
+The @code{string-fill!} procedure stores @var{fill} in the elements of
+@var{string} between @var{start} and @var{end}.
+@end deffn
+
+@cindex grapheme cluster
+The next two procedures treat a given string as a sequence of
+@dfn{grapheme clusters}, a concept defined by the Unicode standard in
+@uref{http://www.unicode.org/reports/tr29/tr29-29.html, UAX #29}:
+
+@quotation
+It is important to recognize that what the user thinks of as a
+``character''---a basic unit of a writing system for a language---may
+not be just a single Unicode code point.  Instead, that basic unit may
+be made up of multiple Unicode code points.  To avoid ambiguity with
+the computer use of the term character, this is called a
+user-perceived character.  For example, ``G'' + acute-accent is a
+user-perceived character: users think of it as a single character, yet
+is actually represented by two Unicode code points.  These
+user-perceived characters are approximated by what is called a
+grapheme cluster, which can be determined programmatically.
+@end quotation
+
+@deffn procedure grapheme-cluster-length string
+This procedure returns the number of grapheme clusters in
+@var{string}.
+
+For @acronym{ASCII} strings, this is identical to
+@code{string-length}.
+@end deffn
+
+@deffn procedure grapheme-cluster-slice string start end
+This procedure slices @var{string} at the grapheme-cluster boundaries
+specified by the @var{start} and @var{end} indices.  These indices are
+grapheme-cluster indices, @emph{not} normal string indices.
+
+For @acronym{ASCII} strings, this is identical to @code{string-slice}.
+@end deffn
+
+@deffn procedure string-word-breaks string
+This procedure returns a list of @dfn{word break} indices for
+@var{string}, ordered from smallest index to largest.  Word breaks are
+defined by the Unicode standard in
+@uref{http://www.unicode.org/reports/tr29/tr29-29.html, UAX #29}, and
+generally coincide with what we think of as the boundaries of words in
+written text.
+@end deffn
+
+@cindex NFC
+@cindex Normalization Form C (NFC)
+@cindex NFD
+@cindex Normalization Form D (NFD)
+@cindex Unicode normalization forms
+MIT/GNU Scheme supports the Unicode canonical normalization forms
+@acronym{NFC} (@dfn{Normalization Form C}) and @acronym{NFD}
+(@dfn{Normalization Form D}).  The reason for these forms is that
+there can be multiple different Unicode sequences for a given text;
+these sequences are semantically identical and should be treated
+equivalently for all purposes.  If two such sequences are normalized to
+the same form, the resulting normalized sequences will be identical.
+
+By default, most procedures that return strings do not normalize, so it
+is up to the programmer to normalize as needed.
+
+Generally speaking, @acronym{NFC} is preferred for most purposes, as
+it is the minimal-length sequence for the variants.  Consult the
+Unicode standard for the details and for information about why one
+normalization form is preferable for a specific purpose.
+
+When doing search and match operations, it is recommended that the
+argument strings be in @acronym{NFC}.  Without normalization, strings
+that should match may not, if they have inconsistent encodings for one
+or more characters.
+
+@deffn procedure string-in-nfc? string
+@deffnx procedure string-in-nfd? string
+These procedures return @code{#t} if @var{string} is in Unicode
+Normalization Form C or D respectively.  Otherwise they return
+@code{#f}.
+
+Note that if @var{string} consists only of code points strictly less
+than @code{#xC0}, then @code{string-in-nfd?} returns @code{#t}.  If
+@var{string} consists only of code points strictly less than
+@code{#x300}, then @code{string-in-nfc?} returns @code{#t}.
+Consequently both of these procedures will return @code{#t} for an
+@acronym{ASCII} string argument.
+@end deffn
+
+@deffn procedure string->nfc string
+@deffnx procedure string->nfd string
+The procedures convert @var{string} into Unicode Normalization Form C
+or D respectively.  If @var{string} is already in the correct form,
+they return @var{string} itself, or an immutable copy if @var{string}
+is mutable.
+@end deffn
+
+@deffn {standard procedure} string-map proc string string @dots{}
+It is an error if @var{proc} does not accept as many arguments as
+there are @var{string}s and return a single character.
+
+The @code{string-map} procedure applies @var{proc} element-wise to the
+elements of the @var{string}s and returns an immutable string of the
+results, in order.  If more than one @var{string} is given and not all
+strings have the same length, @code{string-map} terminates when the
+shortest string runs out.  The dynamic order in which @var{proc} is
+applied to the elements of the @var{string}s is unspecified.  If
+multiple returns occur from @code{string-map}, the values returned by
+earlier returns are not mutated.
+
+@example
+(string-map char-foldcase "AbdEgH")  @result{}  "abdegh"
+
+(string-map
+ (lambda (c)
+   (integer->char (+ 1 (char->integer c))))
+ "HAL")                 @result{}  "IBM"
+
+(string-map
+ (lambda (c k)
+   ((if (eqv? k #\u) char-upcase char-downcase) c))
+ "studlycaps xxx"
+ "ululululul")          @result{}  "StUdLyCaPs"
+@end example
+@end deffn
+
+@deffn {standard procedure} string-for-each proc string string @dots{}
+It is an error if @var{proc} does not
+accept as many arguments as there are @var{string}s.
+
+The arguments to @code{string-for-each} are like the arguments to
+@code{string-map}, but @code{string-for-each} calls @var{proc} for its
+side effects rather than for its values.  Unlike @code{string-map},
+@code{string-for-each} is guaranteed to call @var{proc} on the elements
+of the @var{list}s in order from the first element(s) to the last, and
+the value returned by @code{string-for-each} is unspecified.  If more
+than one @var{string} is given and not all strings have the same
+length, @code{string-for-each} terminates when the shortest string
+runs out.  It is an error for @var{proc} to mutate any of the strings.
+
+@example
+(let ((v '()))
+  (string-for-each
+   (lambda (c) (set! v (cons (char->integer c) v)))
+   "abcde")
+  v)                    @result{}  (101 100 99 98 97)
+@end example
+@end deffn
+
+@deffn procedure string-count proc string string @dots{}
+It is an error if @var{proc} does not accept as many arguments as
+there are @var{string}s.
+
+The @code{string-count} procedure applies @var{proc} element-wise to the
+elements of the @var{string}s and returns a count of the number of
+true values it returns.  If more than one @var{string} is given and not all strings
+have the same length, @code{string-count} terminates when the shortest
+string runs out.  The dynamic order in which @var{proc} is applied to
+the elements of the @var{string}s is unspecified.
+@end deffn
+
+@deffn procedure string-any proc string string @dots{}
+It is an error if @var{proc} does not accept as many arguments as
+there are @var{string}s.
+
+The @code{string-any} procedure applies @var{proc} element-wise to the
+elements of the @var{string}s and returns @code{#t} if it returns a
+true value.  If @var{proc} doesn't return a true value,
+@code{string-any} returns @code{#f}.
+
+If more than one @var{string} is given and not all strings have the
+same length, @code{string-any} terminates when the shortest string
+runs out.  The dynamic order in which @var{proc} is applied to the
+elements of the @var{string}s is unspecified.
+@end deffn
+
+@deffn procedure string-every proc string string @dots{}
+It is an error if @var{proc} does not accept as many arguments as
+there are @var{string}s.
+
+The @code{string-every} procedure applies @var{proc} element-wise to the
+elements of the @var{string}s and returns @code{#f} if it returns a
+false value.  If @var{proc} doesn't return a false value,
+@code{string-every} returns @code{#t}.
+
+If more than one @var{string} is given and not all strings have the
+same length, @code{string-every} terminates when the shortest string
+runs out.  The dynamic order in which @var{proc} is applied to the
+elements of the @var{string}s is unspecified.
+@end deffn
+
+@deffn procedure string-null? string
+@cindex empty string, predicate for
+@cindex null string, predicate for
+Returns @code{#t} if @var{string} has zero length; otherwise returns
+@code{#f}.
+
+@example
+@group
+(string-null? "")       @result{}  #t
+(string-null? "Hi")     @result{}  #f
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-hash string [modulus]
+@deffnx procedure string-hash-ci string [modulus]
+@cindex hashing, of string
+@findex string=?
+@findex string-ci=?
+@findex =
+These @asrfi{69} procedures return an exact non-negative integer that
+can be used for storing the specified @var{string} in a hash table.
+Equal strings (in the sense of @code{string=?} and @code{string-ci=?}
+respectively) return equal (@code{=}) hash codes, and non-equal but
+similar strings are usually mapped to distinct hash codes.
+@end deffn
+
+@deffn procedure string-head string end
+Equivalent to @code{(substring @var{string} 0 @var{end})}.
+@end deffn
+
+@deffn procedure string-tail string start
+Equivalent to @code{(substring @var{string} @var{start})}.
+
+If the optional argument @var{modulus} is specified, it must be an
+exact positive integer, and the result of the hash computation is
+restricted to be less than that value.  This is equivalent to calling
+@code{modulo} on the result, but may be faster.
+@end deffn
+
+@deffn procedure string-builder [buffer-length]
+@cindex string builder procedure
+This procedure returns a @dfn{string builder} that can be used to
+incrementally collect characters and later convert that collection to
+a string.  This is similar to a string output port, but is less
+general and significantly faster.
+
+The optional @var{buffer-length} argument, if given, must be an exact
+positive integer.  It controls the size of the internal buffers that
+are used to accumulate characters.  Larger values make the builder
+somewhat faster but use more space.  The default value of this
+argument is @code{16}.
+
+The returned string builder is a procedure that accepts zero or one
+arguments as follows:
+
+@itemize @bullet
+@item
+Given a character argument, the string builder appends that
+character to the string being built and returns an unspecified value.
+@item
+Given a string argument, the string builder appends that string to the
+string being built and returns an unspecified value.
+@item
+Given no arguments, or one of the ``result'' arguments (see below),
+the string builder returns a copy of the string being built.  Note
+that this does not affect the string being built, so immediately
+calling the builder with no arguments a second time returns a new copy
+of the same string.
+@item
+Given the argument @code{empty?}, the string builder returns @code{#t}
+if the string being built is empty and @code{#f} otherwise.
+@item
+Given the argument @code{count}, the string builder returns the size
+of the string being built.
+@item
+Given the argument @code{reset!}, the string builder discards the
+string being built and returns to the state it was in when initially
+created.
+@end itemize
+
+The ``result'' arguments control the form of the returned string.  The
+arguments @code{immutable} (or no argument) and @code{mutable} are
+straightforward, specifying the mutability of the returned string.
+For these arguments, the returned string contains exactly the same
+characters, in the same order, as were appended to the builder.
+
+However, calling with the argument @code{nfc}, returns an immutable
+string in Unicode Normalization Form C, exactly as if
+@code{string->nfc} were called on one of the other two result strings.
+@end deffn
+
+@deffn procedure string-joiner infix prefix suffix
+@deffnx procedure string-joiner* infix prefix suffix
+@cindex joining, of strings
+This procedure's arguments are keyword arguments; that is, each
+argument is a symbol of the same name followed by its value.  The
+order of the arguments doesn't matter, but each argument may appear
+only once.
+
+@cindex joiner procedure, of strings
+These procedures return a @dfn{joiner} procedure that takes multiple
+strings and joins them together into an immutable string.  The joiner
+returned by @code{string-joiner} accepts these strings as multiple
+string arguments, while @code{string-joiner*} accepts the strings as a
+single list-valued argument.
+
+The joiner produces a result by adding @var{prefix} before,
+@var{suffix} after, and @var{infix} between each input string, then
+concatenating everything together into a single string.  Each of the
+@var{prefix}, @var{suffix}, and @var{infix} arguments is optional and
+defaults to an empty string, so normally at least one is specified.
+
+Some examples:
+@example
+((string-joiner) "a" "b" "c")
+  @result{}  "abc"
+
+((string-joiner 'infix " ") "a" "b" "c")
+  @result{}  "a b c"
+
+((string-joiner 'infix ", ") "a" "b" "c")
+  @result{}  "a, b, c"
+
+((string-joiner* 'infix ", " 'prefix "<" 'suffix ">")
+ '("a" "b" "c"))
+  @result{}  "<a>, <b>, <c>"
+@end example
+@end deffn
+
+@deffn procedure string-splitter delimiter allow-runs? copier copy?
+@cindex splitting, of string
+This procedure's arguments are keyword arguments; that is, each
+argument is a symbol of the same name followed by its value.  The
+order of the arguments doesn't matter, but each argument may appear
+only once.
+
+@cindex splitter procedure
+This procedure returns a @dfn{splitter} procedure that splits a given
+string into parts, returning a list of the parts.  This is done by
+identifying delimiter characters and breaking the string at those
+delimiters.  The splitting process is controlled by the arguments:
+
+@itemize @bullet
+@item
+@var{delimiter} is either a character, a character set, or more
+generally a procedure that accepts a single character argument and
+returns a boolean value.  The splitter uses this to identify
+delimiters in the string.  The default value of this argument is
+@code{char-whitespace?}.
+@item
+@var{allow-runs?} is a boolean that controls what happens when two or
+more adjacent delimiters are found.  If @var{allow-runs?} is
+@code{#t}, then all of the adjacent delimiters are treated as if they
+were a single delimiter, and the string is split at the beginning and
+end of the delimiters.  If @var{allow-runs?} is @code{#f}, then
+adjacent delimiters are treated as if they were separate with an empty
+string between them.  The default value of this argument is @code{#t}.
+@item
+@var{copier} is a procedure that accepts three arguments: a string, a
+start index, and an end index, returning the specified substring as a
+string.  It defaults to @code{string-slice}.
+@item
+@var{copy?} is a boolean, for backwards compatibility; instead use
+@var{copier}.  A value of @code{#t} is equivalent to a @var{copier} of
+@code{substring}, while a value of @code{#f} is equivalent to a
+@var{copier} of @code{string-slice}.
+@end itemize
+
+Some examples:
+@example
+((string-splitter) "a b c")
+  @result{}  ("a" "b" "c")
+
+((string-splitter) "a\tb\tc")
+  @result{}  ("a" "b" "c")
+
+((string-splitter 'delimiter #\space) "a\tb\tc")
+  @result{}  ("a\tb\tc")
+
+((string-splitter) " a  b  c ")
+  @result{}  ("a" "b" "c")
+
+((string-splitter 'allow-runs? #f) " a  b  c ")
+  @result{}  ("" "a" "" "b" "" "c" "")
+@end example
+@end deffn
+
+@deffn procedure string-padder where fill-with clip?
+@cindex padding, of string
+This procedure's arguments are keyword arguments; that is, each
+argument is a symbol of the same name followed by its value.  The
+order of the arguments doesn't matter, but each argument may appear
+only once.
+
+@cindex padder procedure
+This procedure returns a @dfn{padder} procedure that takes a string
+and a grapheme-cluster length as its arguments and returns a new
+string that has been padded to that length.  The padder adds grapheme
+clusters to the string until it has the specified length.  If the
+string's grapheme-cluster length is greater than the given length, the
+string may, depending on the arguments, be reduced to the specified
+length.
+
+The padding process is controlled by the arguments:
+
+@itemize @bullet
+@item
+@findex leading
+@findex trailing
+@var{where} is a symbol: either @code{leading} or @code{trailing},
+which directs the padder to add/remove leading or trailing grapheme
+clusters.  The default value of this argument is @code{leading}.
+@item
+@findex fill-with
+@var{fill-with} is a string that contains exactly one grapheme
+cluster, which is used as the padding to increase the size of the
+string.  The default value of this argument is @code{" "} (a single
+space character).
+@item
+@var{clip?} is a boolean that controls what happens if the given
+string has a longer grapheme-cluster length than the given length.  If
+@code{clip?} is @code{#t}, grapheme clusters are removed (by slicing)
+from the string until it is the correct length; if it is @code{#f}
+then the string is returned unchanged.  The grapheme clusters are
+removed from the beginning of the string if @code{where} is
+@code{leading}, otherwise from the end of the string.  The default
+value of this argument is @code{#t}.
+@end itemize
+
+Some examples:
+@example
+((string-padder) "abc def" 10)
+  @result{}  "   abc def"
+
+((string-padder 'where 'trailing) "abc def" 10)
+  @result{}  "abc def   "
+
+((string-padder 'fill-with "X") "abc def" 10)
+  @result{}  "XXXabc def"
+
+((string-padder) "abc def" 5)
+  @result{}  "c def"
+
+((string-padder 'where 'trailing) "abc def" 5)
+  @result{}  "abc d"
+
+((string-padder 'clip? #f) "abc def" 5)
+  @result{}  "abc def"
+@end example
+@end deffn
+
+@deffn {obsolete procedure} string-pad-left string k [char]
+@deffnx {obsolete procedure} string-pad-right string k [char]
+These procedures are @strong{deprecated} and should be replaced by use
+of @code{string-padder} which is more flexible.
+
+@findex #\space
+These procedures return an immutable string created by padding
+@var{string} out to length @var{k}, using @var{char}.  If @var{char}
+is not given, it defaults to @code{#\space}.  If @var{k} is less than
+the length of @var{string}, the resulting string is a truncated form
+of @var{string}.  @code{string-pad-left} adds padding characters or
+truncates from the beginning of the string (lowest indices), while
+@code{string-pad-right} does so at the end of the string (highest
+indices).
+
+@example
+@group
+(string-pad-left "hello" 4)             @result{}  "ello"
+(string-pad-left "hello" 8)             @result{}  "   hello"
+(string-pad-left "hello" 8 #\*)         @result{}  "***hello"
+(string-pad-right "hello" 4)            @result{}  "hell"
+(string-pad-right "hello" 8)            @result{}  "hello   "
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-trimmer where to-trim copier copy?
+@cindex trimming, of string
+This procedure's arguments are keyword arguments; that is, each
+argument is a symbol of the same name followed by its value.  The
+order of the arguments doesn't matter, but each argument may appear
+only once.
+
+@cindex trimmer procedure
+This procedure returns a @dfn{trimmer} procedure that takes a string as
+its argument and trims that string, returning the trimmed result.  The
+trimming process is controlled by the arguments:
+
+@itemize @bullet
+@item
+@findex leading
+@findex trailing
+@findex both
+@var{where} is a symbol: either @code{leading}, @code{trailing}, or
+@code{both}, which directs the trimmer to trim leading characters,
+trailing characters, or both.  The default value of this argument is
+@code{both}.
+@item
+@findex char-whitespace?
+@var{to-trim} is either a character, a character set, or more
+generally a procedure that accepts a single character argument and
+returns a boolean value.  The trimmer uses this to identify characters
+to remove.  The default value of this argument is
+@code{char-whitespace?}.
+@item
+@var{copier} is a procedure that accepts three arguments: a string, a
+start index, and an end index, returning the specified substring as a
+string.  It defaults to @code{string-slice}.
+@item
+@var{copy?} is a boolean, for backwards compatibility; instead use
+@var{copier}.  A value of @code{#t} is equivalent to a @var{copier} of
+@code{substring}, while a value of @code{#f} is equivalent to a
+@var{copier} of @code{string-slice}.
+@end itemize
+
+Some examples:
+@example
+((string-trimmer 'where 'leading) "    ABC   DEF    ")
+  @result{}  "ABC   DEF    "
+
+((string-trimmer 'where 'trailing) "    ABC   DEF    ")
+  @result{}  "    ABC   DEF"
+
+((string-trimmer 'where 'both) "    ABC   DEF    ")
+  @result{}  "ABC   DEF"
+
+((string-trimmer) "    ABC   DEF    ")
+  @result{}  "ABC   DEF"
+
+((string-trimmer 'to-trim char-numeric? 'where 'leading)
+ "21 East 21st Street #3")
+  @result{}  " East 21st Street #3"
+
+((string-trimmer 'to-trim char-numeric? 'where 'trailing)
+ "21 East 21st Street #3")
+  @result{}  "21 East 21st Street #"
+
+((string-trimmer 'to-trim char-numeric?)
+ "21 East 21st Street #3")
+  @result{}  " East 21st Street #"
+@end example
+@end deffn
+
+@deffn {obsolete procedure} string-trim string [char-set]
+@deffnx {obsolete procedure} string-trim-left string [char-set]
+@deffnx {obsolete procedure} string-trim-right string [char-set]
+These procedures are @strong{deprecated} and should be replaced by use
+of @code{string-trimmer} which is more flexible.
+
+@findex char-set:whitespace
+Returns an immutable string created by removing all characters that
+are not in @var{char-set} from: (@code{string-trim}) both ends of
+@var{string}; (@code{string-trim-left}) the beginning of @var{string};
+or (@code{string-trim-right}) the end of @var{string}.  @var{Char-set}
+defaults to @code{char-set:not-whitespace}.
+
+@example
+@group
+(string-trim "  in the end  ")          @result{}  "in the end"
+(string-trim "              ")          @result{}  ""
+(string-trim "100th" char-set:numeric)  @result{}  "100"
+(string-trim-left "-.-+-=-" (char-set #\+))
+                                        @result{}  "+-=-"
+(string-trim "but (+ x y) is" (char-set #\( #\)))
+                                        @result{}  "(+ x y)"
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-replace string char1 char2
+Returns an immutable string containing the same characters as
+@var{string} except that all instances of @var{char1} have been
+replaced by @var{char2}.
+@end deffn
+
+@node Searching and Matching Strings, Regular Expressions, Strings, Strings
+@section Searching and Matching Strings
+@cindex searching, of string
+@cindex matching, of strings
+@cindex character, searching string for
+@cindex string, searching string for
+
+This section describes procedures for searching a string, either for a
+character or a substring, and matching two strings to one another.
+
+@deffn procedure string-search-forward pattern string [start [end]]
+Searches @var{string} for the leftmost occurrence of the substring
+@var{pattern}.  If successful, the index of the first character of the
+matched substring is returned; otherwise, @code{#f} is returned.
+
+@example
+@group
+(string-search-forward "rat" "pirate")
+    @result{} 2
+(string-search-forward "rat" "pirate rating")
+    @result{} 2
+(string-search-forward "rat" "pirate rating" 4 13)
+    @result{} 7
+(string-search-forward "rat" "pirate rating" 9 13)
+    @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-search-backward pattern string [start [end]]
+Searches @var{string} for the rightmost occurrence of the substring
+@var{pattern}.  If successful, the index to the right of the last
+character of the matched substring is returned; otherwise, @code{#f}
+is returned.
+
+@example
+@group
+(string-search-backward "rat" "pirate")
+    @result{} 5
+(string-search-backward "rat" "pirate rating")
+    @result{} 10
+(string-search-backward "rat" "pirate rating" 1 8)
+    @result{} 5
+(string-search-backward "rat" "pirate rating" 9 13)
+    @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-search-all pattern string [start [end]]
+Searches @var{string} to find all occurrences of the substring
+@var{pattern}.  Returns a list of the occurrences; each element of the
+list is an index pointing to the first character of an occurrence.
+
+@example
+@group
+(string-search-all "rat" "pirate")
+    @result{} (2)
+(string-search-all "rat" "pirate rating")
+    @result{} (2 7)
+(string-search-all "rat" "pirate rating" 4 13)
+    @result{} (7)
+(string-search-all "rat" "pirate rating" 9 13)
+    @result{} ()
+@end group
+@end example
+@end deffn
+
+@deffn procedure substring? pattern string
+Searches @var{string} to see if it contains the substring
+@var{pattern}.  Returns @code{#t} if @var{pattern} is a substring of
+@var{string}, otherwise returns @code{#f}.
+
+@example
+@group
+(substring? "rat" "pirate")             @result{}  #t
+(substring? "rat" "outrage")            @result{}  #f
+(substring? "" any-string)              @result{}  #t
+(if (substring? "moon" text)
+    (process-lunar text)
+    'no-moon)
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-find-first-index proc string string @dots{}
+@deffnx procedure string-find-last-index proc string string @dots{}
+The @var{proc} argument must accept as many arguments as there are
+@var{string}s.
+
+These procedures apply @var{proc} element-wise to the elements of the
+@var{string}s and return the first or last index for which @var{proc}
+returns a true value.  If there is no such index, then @code{#f} is
+returned.
+
+If more than one @var{string} is given and not all strings have the
+same length, then only the indexes of the shortest string are tested.
+@end deffn
+
+@deffn procedure string-find-next-char string char [start [end]]
+@deffnx procedure string-find-next-char-ci string char [start [end]]
+@deffnx procedure string-find-next-char-in-set string char-set [start [end]]
+These procedures search @var{string} for a matching character,
+starting from @var{start} and moving forwards to @var{end}.  If there
+is a matching character, the procedures stop the search and return the
+index of that character.  If there is no matching character, the
+procedures return @code{#f}.
+
+The procedures differ only in how they match characters:
+@code{string-find-next-char} matches a character that is @code{char=?}
+to @var{char}; @code{string-find-next-char-ci} matches a character
+that is @code{char-ci=?} to @var{char}; and
+@code{string-find-next-char-in-set} matches a character that's a
+member of @var{char-set}.
+
+@example
+@group
+(string-find-next-char "Adam" #\A)           @result{}  0 
+(string-find-next-char "Adam" #\A 1 4)       @result{}  #f
+(string-find-next-char-ci "Adam" #\A 1 4)    @result{}  2 
+(string-find-next-char-in-set my-string char-set:alphabetic)
+    @result{}  @r{start position of the first word in} my-string
+@r{; Can be used as a predicate:}
+(if (string-find-next-char-in-set my-string
+                                  (char-set #\( #\) ))
+    'contains-parentheses
+    'no-parentheses)
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-find-previous-char string char [start [end]]
+@deffnx procedure string-find-previous-char-ci string char [start [end]]
+@deffnx procedure string-find-previous-char-in-set string char-set [start [end]]
+These procedures search @var{string} for a matching character,
+starting from @var{end} and moving backwards to @var{start}.  If there
+is a matching character, the procedures stop the search and return the
+index of that character.  If there is no matching character, the
+procedures return @code{#f}.
+
+The procedures differ only in how they match characters:
+@code{string-find-previous-char} matches a character that is
+@code{char=?}  to @var{char}; @code{string-find-previous-char-ci}
+matches a character that is @code{char-ci=?} to @var{char}; and
+@code{string-find-previous-char-in-set} matches a character that's a
+member of @var{char-set}.
+@end deffn
+
+@deffn procedure string-match-forward string1 string2
+Compares the two strings, starting from the beginning, and returns the
+number of characters that are the same.  If the two strings start
+differently, returns 0.
+
+@example
+@group
+(string-match-forward "mirror" "micro") @result{}  2  @r{; matches "mi"}
+(string-match-forward "a" "b")          @result{}  0  @r{; no match}
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-match-backward string1 string2
+Compares the two strings, starting from the end and matching toward
+the front, returning the number of characters that are the same.  If
+the two strings end differently, returns 0.
+
+@example
+@group
+(string-match-backward "bulbous" "fractious")
+                                        @result{}  3  @r{; matches "ous"}
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-prefix? string1 string2
+@deffnx procedure string-prefix-ci? string1 string2
+@cindex prefix, of string
+These procedures return @code{#t} if the first string forms the prefix
+of the second; otherwise returns @code{#f}.  The @code{-ci} procedures
+don't distinguish uppercase and lowercase letters.
+
+@example
+@group
+(string-prefix? "abc" "abcdef")         @result{}  #t
+(string-prefix? "" any-string)          @result{}  #t
+@end group
+@end example
+@end deffn
+
+@deffn procedure string-suffix? string1 string2
+@deffnx procedure string-suffix-ci? string1 string2
+@cindex suffix, of string
+These procedures return @code{#t} if the first string forms the suffix
+of the second; otherwise returns @code{#f}.  The @code{-ci} procedures
+don't distinguish uppercase and lowercase letters.
+
+@example
+@group
+(string-suffix? "ous" "bulbous")        @result{}  #t
+(string-suffix? "" any-string)          @result{}  #t
+@end group
+@end example
+@end deffn
+
+@node Regular Expressions,  , Searching and Matching Strings, Strings
+@section Regular Expressions
+
+MIT/GNU Scheme provides support for matching and searching strings
+against regular expressions.  This is considerably more flexible than
+ordinary string matching and searching, but potentially much slower.
+On the other hand it is less powerful than the mechanism described in
+@ref{Parser Language}.
+
+Traditional regular expressions are defined with string patterns in
+which characters like @samp{[} and @samp{*} have special meanings.
+Unfortunately, the syntax of these patterns is not only baroque but
+also comes in many different and mutually-incompatible varieties.  As
+a consequence we have chosen to specify regular expressions using an
+s-expression syntax, which we call a @dfn{regular s-expression},
+abbreviated as @dfn{regsexp}.
+
+Previous releases of MIT/GNU Scheme provided a regular-expression
+implementation nearly identical to that of GNU Emacs version 18.  This
+implementation supported only 8-bit strings, which made it unsuitable
+for use with Unicode strings.  This implementation still exists but is
+deprecated and will be removed in a future release.
+
+@menu
+* Regular S-Expressions::
+* Regsexp Procedures::
+@end menu
+
+@node Regular S-Expressions, Regsexp Procedures, Regular Expressions, Regular Expressions
+@subsection Regular S-Expressions
+
+A regular s-expression is either a character or a string, which
+matches itself, or one of the following forms.
+
+Examples in this section use the following definitions for brevity:
+
+@example
+(define (try-match pattern string)
+  (regsexp-match-string (compile-regsexp pattern) string))
+
+(define (try-search pattern string)
+  (regsexp-search-string-forward (compile-regsexp pattern) string))
+@end example
+
+These forms match one or more characters literally:
+
+@deffn {regsexp} char-ci char
+Matches @var{char} without considering case.
+@end deffn
+
+@deffn {regsexp} string-ci string
+Matches @var{string} without considering case.
+@end deffn
+
+@deffn {regsexp} any-char
+Matches one character other than @code{#\newline}.
+
+@example
+(try-match '(any-char) "") @result{} #f
+(try-match '(any-char) "a") @result{} (0 1)
+(try-match '(any-char) "\n") @result{} #f
+(try-search '(any-char) "") @result{} #f
+(try-search '(any-char) "ab") @result{} (0 1)
+(try-search '(any-char) "\na") @result{} (1 2)
+@end example
+@end deffn
+
+@deffn {regsexp} char-in datum @dots{}
+@deffnx {regsexp} char-not-in datum @dots{}
+Matches one character in (not in) the character set specified by
+@code{(char-set @var{datum @dots{}})}.
+
+@example
+(try-match '(seq "a" (char-in "ab") "c") "abc") @result{} (0 3)
+(try-match '(seq "a" (char-not-in "ab") "c") "abc") @result{} #f
+(try-match '(seq "a" (char-not-in "ab") "c") "adc") @result{} (0 3)
+(try-match '(seq "a" (+ (char-in numeric)) "c") "a019c") @result{} (0 5)
+@end example
+@end deffn
+
+These forms match no characters, but only at specific locations in the
+input string:
+
+@deffn {regsexp} line-start
+@deffnx {regsexp} line-end
+Matches no characters at the start (end) of a line.
+
+@example
+@group
+(try-match '(seq (line-start)
+                 (* (any-char))
+                 (line-end))
+           "abc") @result{} (0 3)
+@end group
+@group
+(try-match '(seq (line-start)
+                 (* (any-char))
+                 (line-end))
+           "ab\nc") @result{} (0 2)
+@end group
+@group
+(try-search '(seq (line-start)
+                  (* (char-in alphabetic))
+                  (line-end))
+            "1abc") @result{} #f
+@end group
+@group
+(try-search '(seq (line-start)
+                  (* (char-in alphabetic))
+                  (line-end))
+            "1\nabc") @result{} (2 5)
+@end group
+@end example
+@end deffn
+
+@deffn {regsexp} string-start
+@deffnx {regsexp} string-end
+Matches no characters at the start (end) of the string.
+
+@example
+@group
+(try-match '(seq (string-start)
+                 (* (any-char))
+                 (string-end))
+           "abc") @result{} (0 3)
+@end group
+@group
+(try-match '(seq (string-start)
+                 (* (any-char))
+                 (string-end))
+           "ab\nc") @result{} #f
+@end group
+@group
+(try-search '(seq (string-start)
+                  (* (char-in alphabetic))
+                  (string-end))
+            "1abc") @result{} #f
+@end group
+@group
+(try-search '(seq (string-start)
+                  (* (char-in alphabetic))
+                  (string-end))
+            "1\nabc") @result{} #f
+@end group
+@end example
+@end deffn
+
+These forms match repetitions of a given regsexp.  Most of them come
+in two forms, one of which is @dfn{greedy} and the other @dfn{shy}.
+The greedy form matches as many repetitions as it can, then uses
+failure backtracking to reduce the number of repetitions one at a
+time.  The shy form matches the minimum number of repetitions, then
+uses failure backtracking to increase the number of repetitions one at
+a time.  The shy form is similar to the greedy form except that a
+@code{?} is added at the end of the form's keyword.
+
+@deffn {regsexp} ? regsexp
+@deffnx {regsexp} ?? regsexp
+Matches @var{regsexp} zero or one time.
+
+@example
+@group
+(try-search '(seq (char-in alphabetic)
+                  (? (char-in numeric)))
+            "a") @result{} (0 1)
+@end group
+@group
+(try-search '(seq (char-in alphabetic)
+                  (?? (char-in numeric)))
+            "a") @result{} (0 1)
+@end group
+@group
+(try-search '(seq (char-in alphabetic)
+                  (? (char-in numeric)))
+            "a1") @result{} (0 2)
+@end group
+@group
+(try-search '(seq (char-in alphabetic)
+                  (?? (char-in numeric)))
+            "a1") @result{} (0 1)
+@end group
+@group
+(try-search '(seq (char-in alphabetic)
+                  (? (char-in numeric)))
+            "1a2") @result{} (1 3)
+@end group
+@group
+(try-search '(seq (char-in alphabetic)
+                  (?? (char-in numeric)))
+            "1a2") @result{} (1 2)
+@end group
+@end example
+@end deffn
+
+@deffn {regsexp} * regsexp
+@deffnx {regsexp} *? regsexp
+Matches @var{regsexp} zero or more times.
+
+@example
+@group
+(try-match '(seq (char-in alphabetic)
+                 (* (char-in numeric))
+                 (any-char))
+           "aa") @result{} (0 2)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (*? (char-in numeric))
+                 (any-char))
+           "aa") @result{} (0 2)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (* (char-in numeric))
+                 (any-char))
+           "a123a") @result{} (0 5)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (*? (char-in numeric))
+                 (any-char))
+           "a123a") @result{} (0 2)
+@end group
+@end example
+@end deffn
+
+@deffn {regsexp} + regsexp
+@deffnx {regsexp} +? regsexp
+Matches @var{regsexp} one or more times.
+
+@example
+@group
+(try-match '(seq (char-in alphabetic)
+                 (+ (char-in numeric))
+                 (any-char))
+           "aa") @result{} #f
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (+? (char-in numeric))
+                 (any-char))
+           "aa") @result{} #f
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (+ (char-in numeric))
+                 (any-char))
+           "a123a") @result{} (0 5)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (+? (char-in numeric))
+                 (any-char))
+           "a123a") @result{} (0 3)
+@end group
+@end example
+@end deffn
+
+@deffn {regsexp} ** n m regsexp
+@deffnx {regsexp} **? n m regsexp
+The @var{n} argument must be an exact nonnegative integer.  The
+@var{m} argument must be either an exact integer greater than or equal
+to @var{n}, or else @code{#f}.
+
+Matches @var{regsexp} at least @var{n} times and at most @var{m}
+times; if @var{m} is @code{#f} then there is no upper limit.
+
+@example
+@group
+(try-match '(seq (char-in alphabetic)
+                 (** 0 2 (char-in numeric))
+                 (any-char))
+           "aa") @result{} (0 2)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (**? 0 2 (char-in numeric))
+                 (any-char))
+           "aa") @result{} (0 2)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (** 0 2 (char-in numeric))
+                 (any-char))
+           "a123a") @result{} (0 4)
+@end group
+@group
+(try-match '(seq (char-in alphabetic)
+                 (**? 0 2 (char-in numeric))
+                 (any-char))
+           "a123a") @result{} (0 2)
+@end group
+@end example
+@end deffn
+
+@deffn {regsexp} ** n regsexp
+This is an abbreviation for @code{(** @var{n} @var{n}
+@var{regsexp})}.  This matcher is neither greedy nor shy since it
+matches a fixed number of repetitions.
+@end deffn
+
+These forms implement alternatives and sequencing:
+
+@deffn {regsexp} alt regsexp @dots{}
+Matches one of the @var{regsexp} arguments, trying each in order from
+left to right.
+
+@example
+(try-match '(alt #\a (char-in numeric)) "a") @result{} (0 1)
+(try-match '(alt #\a (char-in numeric)) "b") @result{} #f
+(try-match '(alt #\a (char-in numeric)) "1") @result{} (0 1)
+@end example
+@end deffn
+
+@deffn {regsexp} seq regsexp @dots{}
+Matches the first @var{regsexp}, then continues the match with the
+next @var{regsexp}, and so on until all of the arguments are matched.
+
+@example
+(try-match '(seq #\a #\b) "a") @result{} #f
+(try-match '(seq #\a #\b) "aa") @result{} #f
+(try-match '(seq #\a #\b) "ab") @result{} (0 2)
+@end example
+@end deffn
+
+These forms implement named @dfn{registers}, which store matched
+segments of the input string:
+
+@deffn {regsexp} group key regsexp
+The @var{key} argument must be a fixnum, a character, or a symbol.
+
+Matches @var{regsexp}.  If the match succeeds, the matched segment is
+stored in the register named @var{key}.
+
+@example
+@group
+(try-match '(seq (group a (any-char))
+                 (group b (any-char))
+                 (any-char))
+           "radar") @result{} (0 3 (a . "r") (b . "a"))
+@end group
+@end example
+@end deffn
+
+@deffn {regsexp} group-ref key
+The @var{key} argument must be a fixnum, a character, or a symbol.
+
+Matches the characters stored in the register named @var{key}.  It is
+an error if that register has not been initialized with a
+corresponding @code{group} expression.
+
+@example
+@group
+(try-match '(seq (group a (any-char))
+                 (group b (any-char))
+                 (any-char)
+                 (group-ref b)
+                 (group-ref a))
+           "radar") @result{} (0 5 (a . "r") (b . "a"))
+@end group
+@end example
+@end deffn
+
+@node Regsexp Procedures,  , Regular S-Expressions, Regular Expressions
+@subsection Regsexp Procedures
+
+The regular s-expression implementation has two parts, like
+many other regular-expression implementations: a compiler that
+translates the pattern into an efficient form, and one or more
+procedures that use that pattern to match or search inputs.
+
+@deffn procedure compile-regsexp regsexp
+Compiles @var{regsexp} by translating it into a procedure that
+implements the specified matcher.
+@end deffn
+
+The match and search procedures each return a list when they are
+successful, and @code{#f} when they fail.  The returned list is of the
+form @code{(@var{s} @var{e} @var{register} @dots{})}, where @var{s} is
+the index at which the match starts, @var{e} is the index at which the
+match ends, and each @var{register} is a pair @code{(@var{key}
+. @var{contents})} where @var{key} is the register's name and
+@var{contents} is the contents of that register as a string.
+
+In order to get reliable results, the string arguments to these
+procedures must be in Unicode Normalization Form C.  The string
+implementation keeps most strings in this form by default; in other
+cases the caller must convert the string using @code{string->nfc}.
+
+@deffn procedure regsexp-match-string crse string [start [end]]
+The @var{crse} argument must be a value returned by
+@code{compile-regsexp}.
+
+Matches @var{string} against @var{crse} and returns the result.
+@end deffn
+
+@deffn procedure regsexp-search-string-forward crse string [start [end]]
+The @var{crse} argument must be a value returned by
+@code{compile-regsexp}.
+
+Searches @var{string} from left to right for a match against
+@var{crse} and returns the result.
+@end deffn

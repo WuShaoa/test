@@ -1,0 +1,622 @@
+@node Characters, Strings, Numbers, Top
+@chapter Characters
+
+@cindex character (defn)
+Characters are objects that represent printed characters such as
+letters and digits.  MIT/GNU Scheme supports the full Unicode
+character repertoire.
+
+@menu
+* Character implementation::
+* Unicode::
+* Character Sets::
+@end menu
+
+@cindex #\ as external representation
+@findex #\
+Characters are written using the notation @code{#\@var{character}} or
+@code{#\@var{character-name}} or @code{#\x@var{hex-scalar-value}}.
+
+The following standard character names are supported:
+
+@example
+@group
+#\alarm                 @r{; U+0007}
+#\backspace             @r{; U+0008}
+#\delete                @r{; U+007F}
+#\escape                @r{; U+001B}
+#\newline               @r{; the linefeed character, U+000A}
+#\null                  @r{; the null character, U+0000}
+#\return                @r{; the return character, U+000D}
+#\space                 @r{; the preferred way to write a space, U+0020}
+#\tab                   @r{; the tab character, U+0009}
+@end group
+@end example
+@findex #\alarm
+@findex #\backspace
+@findex #\delete
+@findex #\escape
+@findex #\newline
+@findex #\null
+@findex #\return
+@findex #\space
+@findex #\tab
+
+Here are some additional examples:
+
+@example
+@group
+#\a                     @r{; lowercase letter}
+#\A                     @r{; uppercase letter}
+#\(                     @r{; left parenthesis}
+#\                      @r{; the space character}
+@end group
+@end example
+
+@noindent
+Case is significant in @code{#\@var{character}}, and in
+@code{#\@var{character-name}}, but not in
+@code{#\x@var{hex-scalar-value}}.  If @var{character} in
+@code{#\@var{character}} is alphabetic, then any character immediately
+following @var{character} cannot be one that can appear in an
+identifier.  This rule resolves the ambiguous case where, for example,
+the sequence of characters @samp{#\space} could be taken to be either
+a representation of the space character or a representation of the
+character @samp{#\s} followed by a representation of the symbol
+@samp{pace}.
+
+Characters written in the @code{#\} notation are self-evaluating.
+That is, they do not have to be quoted in programs.
+
+Some of the procedures that operate on characters ignore the
+difference between upper case and lower case.  The procedures that
+ignore case have @samp{-ci} (for ``case insensitive'') embedded in
+their names.
+
+@cindex bucky bit, prefix (defn)
+@cindex control, bucky bit prefix (defn)
+@cindex meta, bucky bit prefix (defn)
+@cindex super, bucky bit prefix (defn)
+@cindex hyper, bucky bit prefix (defn)
+MIT/GNU Scheme allows a character name to include one or more
+@dfn{bucky bit} prefixes to indicate that the character includes one
+or more of the keyboard shift keys Control, Meta, Super, or Hyper
+(note that the Control bucky bit prefix is not the same as the
+@acronym{ASCII} control key).  The bucky bit prefixes and their
+meanings are as follows (case is not significant):
+
+@example
+@group
+Key             Bucky bit prefix        Bucky bit
+---             ----------------        ---------
+
+Meta            M- or Meta-                 1
+Control         C- or Control-              2
+Super           S- or Super-                4
+Hyper           H- or Hyper-                8
+@end group
+@end example
+
+@noindent
+For example,
+
+@example
+@group
+#\c-a                   @r{; Control-a}
+#\meta-b                @r{; Meta-b}
+#\c-s-m-h-A             @r{; Control-Meta-Super-Hyper-A}
+@end group
+@end example
+
+@deffn procedure char->name char
+Returns a string corresponding to the printed representation of
+@var{char}.  This is the @var{character}, @var{character-name}, or
+@code{x@var{hex-scalar-value}} component of the external
+representation, combined with the appropriate bucky bit prefixes.
+
+@example
+@group
+(char->name #\a)                        @result{}  "a"
+(char->name #\space)                    @result{}  "space"
+(char->name #\c-a)                      @result{}  "C-a"
+(char->name #\control-a)                @result{}  "C-a"
+@end group
+@end example
+@end deffn
+
+@deffn procedure name->char string
+Converts a string that names a character into the character specified.
+If @var{string} does not name any character, @code{name->char} signals
+an error.
+
+@example
+@group
+(name->char "a")                        @result{}  #\a
+(name->char "space")                    @result{}  #\space
+(name->char "SPACE")                    @result{}  #\space
+(name->char "c-a")                      @result{}  #\C-a
+(name->char "control-a")                @result{}  #\C-a
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} char? object
+@cindex type predicate, for character
+Returns @code{#t} if @var{object} is a character, otherwise returns
+@code{#f}.
+@end deffn
+
+@deffn {standard procedure} char=? char1 char2 char3 @dots{}
+@deffnx {standard procedure} char<? char1 char2 char3 @dots{}
+@deffnx {standard procedure} char>? char1 char2 char3 @dots{}
+@deffnx {standard procedure} char<=? char1 char2 char3 @dots{}
+@deffnx {standard procedure} char>=? char1 char2 char3 @dots{}
+@cindex equivalence predicate, for characters
+@cindex ordering, of characters
+@cindex comparison, of characters
+These procedures return @code{#t} if the results of passing their
+arguments to @code{char->integer} are respectively equal,
+monotonically increasing, monotonically decreasing, monotonically
+non-decreasing, or monotonically non-increasing.
+
+These predicates are transitive.
+@end deffn
+
+@deffn {char library procedure} char-ci=? char1 char2 char3 @dots{}
+@deffnx {char library procedure} char-ci<? char1 char2 char3 @dots{}
+@deffnx {char library procedure} char-ci>? char1 char2 char3 @dots{}
+@deffnx {char library procedure} char-ci<=? char1 char2 char3 @dots{}
+@deffnx {char library procedure} char-ci>=? char1 char2 char3 @dots{}
+These procedures are similar to @code{char=?} et cetera, but they
+treat upper case and lower case letters as the same.  For example,
+@code{(char-ci=? #\A #\a)} returns @code{#t}.
+
+Specifically, these procedures behave as if @code{char-foldcase} were
+applied to their arguments before they were compared.
+@end deffn
+
+@deffn {char library procedure} char-alphabetic? char
+@deffnx {char library procedure} char-numeric? char
+@deffnx {char library procedure} char-whitespace? char
+@deffnx {char library procedure} char-upper-case? char
+@deffnx {char library procedure} char-lower-case? char
+These procedures return @code{#t} if their arguments are alphabetic,
+numeric, whitespace, upper case, or lower case characters
+respectively, otherwise they return @code{#f}.
+
+Specifically, they return @code{#t} when applied to characters with
+the Unicode properties Alphabetic, Numeric_Decimal, White_Space,
+Uppercase, or Lowercase respectively, and @code{#f} when applied to
+any other Unicode characters.  Note that many Unicode characters are
+alphabetic but neither upper nor lower case.
+@end deffn
+
+@deffn procedure char-alphanumeric? char
+Returns @code{#t} if @var{char} is either alphabetic or numeric,
+otherwise it returns @code{#f}.
+@end deffn
+
+@deffn {char library procedure} digit-value char
+This procedure returns the numeric value (0 to 9) of its argument
+if it is a numeric digit (that is, if @code{char-numeric?} returns @code{#t}),
+or @code{#f} on any other character.
+
+@example
+@group
+(digit-value #\3) @result{} 3
+(digit-value #\x0664) @result{} 4
+(digit-value #\x0AE6) @result{} 0
+(digit-value #\x0EA6) @result{} #f
+@end group
+@end example
+@end deffn
+
+@deffn {standard procedure} char->integer char
+@deffnx {standard procedure} integer->char n
+Given a Unicode character, @code{char->integer} returns an exact
+integer between @code{0} and @code{#xD7FF} or between @code{#xE000}
+and @code{#x10FFFF} which is equal to the Unicode scalar value of that
+character.  Given a non-Unicode character, it returns an exact integer
+greater than @code{#x10FFFF}.
+
+Given an exact integer that is the value returned by a character when
+@code{char->integer} is applied to it, @code{integer->char} returns
+that character.
+
+Implementation note: MIT/GNU Scheme allows any Unicode code point, not
+just scalar values.
+
+Implementation note: If the argument to @code{char->integer} or
+@code{integer->char} is a constant, the MIT/GNU Scheme compiler will
+constant-fold the call, replacing it with the corresponding result.
+This is a very useful way to denote unusual character constants or
+@acronym{ASCII} codes.
+@end deffn
+
+@deffn {char library procedure} char-upcase char
+@deffnx {char library procedure} char-downcase char
+@deffnx {char library procedure} char-foldcase char
+@cindex uppercase, character conversion
+@cindex lowercase, character conversion
+@cindex case conversion, of character
+@cindex case folding, of character
+The @code{char-upcase} procedure, given an argument that is the
+lowercase part of a Unicode casing pair, returns the uppercase member
+of the pair.  Note that language-sensitive casing pairs are not used.
+If the argument is not the lowercase member of such a pair, it is
+returned.
+
+The @code{char-downcase} procedure, given an argument that is the
+uppercase part of a Unicode casing pair, returns the lowercase member
+of the pair.  Note that language-sensitive casing pairs are not used.
+If the argument is not the uppercase member of such a pair, it is
+returned.
+
+The @code{char-foldcase} procedure applies the Unicode simple
+case-folding algorithm to its argument and returns the result.  Note
+that language-sensitive folding is not used.  See
+@uref{http://www.unicode.org/reports/tr44/, UAX #44} (part of the
+Unicode Standard) for details.
+
+Note that many Unicode lowercase characters do not have uppercase
+equivalents.
+@end deffn
+
+@deffn procedure char->digit char [radix]
+If @var{char} is a character representing a digit in the given
+@var{radix}, returns the corresponding integer value.  If @var{radix}
+is specified (which must be an exact integer between 2 and 36
+inclusive), the conversion is done in that base, otherwise it is done
+in base 10.  If @var{char} doesn't represent a digit in base
+@var{radix}, @code{char->digit} returns @code{#f}.
+
+Note that this procedure is insensitive to the alphabetic case of
+@var{char}.
+
+@example
+@group
+(char->digit #\8)                       @result{}  8
+(char->digit #\e 16)                    @result{}  14
+(char->digit #\e)                       @result{}  #f
+@end group
+@end example
+@end deffn
+
+@deffn procedure digit->char digit [radix]
+Returns a character that represents @var{digit} in the radix given by
+@var{radix}.  The @var{radix} argument, if given, must be an exact
+integer between 2 and 36 (inclusive); it defaults to 10.  The
+@var{digit} argument must be an exact non-negative integer strictly
+less than @var{radix}.
+
+@example
+@group
+(digit->char 8)                         @result{}  #\8
+(digit->char 14 16)                     @result{}  #\E
+@end group
+@end example
+@end deffn
+
+@node Character implementation, Unicode, Characters, Characters
+@section Character implementation
+@cindex internal representation, for character
+
+@cindex character code (defn)
+@cindex character bits (defn)
+@cindex code, of character (defn)
+@cindex bucky bit, of character (defn)
+@cindex ASCII character
+An MIT/GNU Scheme character consists of a @dfn{code} part and a
+@dfn{bucky bits} part.  The code part is a Unicode code point, while
+the bucky bits are an additional set of bits representing shift keys
+available on some keyboards.
+
+There are 4 bucky bits, named @dfn{control}, @dfn{meta}, @dfn{super},
+and @dfn{hyper}.  On GNU/Linux systems running a graphical desktop,
+the control bit corresponds to the @key{CTRL} key; the meta bit
+corresponds to the @key{ALT} key; and the super bit corresponds to the
+``windows'' key.  On macOS, these are the @key{CONTROL}, @key{OPTION},
+and @key{COMMAND} keys respectively.
+
+Characters with bucky bits are not used much outside of graphical user
+interfaces (e.g. Edwin).  They cannot be stored in strings or
+character sets, and aren't read or written by textual I/O ports.
+
+@deffn procedure make-char code bucky-bits
+@cindex construction, of character
+Builds a character from @var{code} and @var{bucky-bits}.  The value of
+@var{code} must be a Unicode code point; the value of @var{bucky-bits}
+must be an exact non-negative integer strictly less than @code{16}.
+If @code{0} is specified for @var{bucky-bits}, @code{make-char}
+produces an ordinary character; otherwise, the appropriate bits are
+set as follows:
+@example
+@group
+1               meta
+2               control
+4               super
+8               hyper
+@end group
+@end example
+
+For example,
+@example
+@group
+(make-char 97 0)                        @result{}  #\a
+(make-char 97 1)                        @result{}  #\M-a
+(make-char 97 2)                        @result{}  #\C-a
+(make-char 97 3)                        @result{}  #\C-M-a
+@end group
+@end example
+@end deffn
+
+@deffn procedure char-code char
+Returns the Unicode code point of @var{char}.  Note that if @var{char}
+has no bucky bits set, then this is the same value returned by
+@code{char->integer}.
+
+For example,
+@example
+@group
+(char-code #\a)                         @result{}  97
+(char-code #\c-a)                       @result{}  97
+@end group
+@end example
+@end deffn
+
+@deffn procedure char-bits char
+@cindex selection, of character component
+@cindex component selection, of character
+Returns the exact integer representation of @var{char}'s bucky bits.
+For example,
+
+@example
+@group
+(char-bits #\a)                         @result{}  0
+(char-bits #\m-a)                       @result{}  1
+(char-bits #\c-a)                       @result{}  2
+(char-bits #\c-m-a)                     @result{}  3
+@end group
+@end example
+@end deffn
+
+@defvr constant char-code-limit
+This constant is the strict upper limit on a character's @var{code}
+value. It is @code{#x110000} unless some future version of Unicode
+increases the range of code points.
+@end defvr
+
+@defvr constant char-bits-limit
+This constant is the strict upper limit on a character's
+@var{bucky-bits} value.  It is currently @code{#x10} and unlikely to
+change in the future.
+@end defvr
+
+@deffn procedure bitless-char? object
+@cindex bitless character
+@cindex character, bitless
+Returns @code{#t} if @var{object} is a character with no bucky bits
+set, otherwise it returns @code{#f} .
+@end deffn
+
+@deffn procedure char->bitless-char char
+Returns @var{char} with any bucky bits removed.  The result is
+guaranteed to satisfy @code{bitless-char?}.
+@end deffn
+
+@deffn procedure char-predicate char
+Returns a procedure of one argument that returns @code{#t} if its
+argument is a character @code{char=?} to @var{char}, otherwise it
+returns @code{#f}.
+@end deffn
+
+@deffn procedure char-ci-predicate char
+Returns a procedure of one argument that returns @code{#t} if its
+argument is a character @code{char-ci=?} to @var{char}, otherwise it
+returns @code{#f}.
+@end deffn
+
+@node Unicode, Character Sets, Character implementation, Characters
+@section Unicode
+
+@cindex Unicode
+@cindex Unicode code point
+@cindex Unicode scalar value
+@cindex code point
+@cindex scalar value
+MIT/GNU Scheme implements the full Unicode character repertoire,
+defining predicates for Unicode characters and their associated
+integer values.  A @dfn{Unicode code point} is an exact non-negative
+integer strictly less than @code{#x110000}.  A @dfn{Unicode scalar
+value} is a Unicode code point that doesn't fall between @code{#xD800}
+inclusive and @code{#xE000} exclusive; in other words, any Unicode
+code point except for the @dfn{surrogate} code points.
+
+@deffn procedure unicode-code-point? object
+Returns @code{#t} if @var{object} is a Unicode code point, otherwise
+it returns @code{#f}.
+@end deffn
+
+@deffn procedure unicode-scalar-value? object
+Returns @code{#t} if @var{object} is a Unicode scalar value, otherwise
+it returns @code{#f}.
+@end deffn
+
+@deffn procedure unicode-char? object
+Returns @code{#t} if @var{object} is any character corresponding to a
+Unicode code point, except for those with general category
+@code{other:surrogate} or @code{other:not-assigned}.
+@end deffn
+
+@deffn procedure char-general-category char
+@deffnx procedure code-point-general-category code-point
+Returns the Unicode general category of @var{char} (or
+@var{code-point}) as a descriptive symbol:
+
+@multitable @columnfractions .1 .4
+@headitem Category @tab Symbol
+@item Lu @tab @code{letter:uppercase}
+@item Ll @tab @code{letter:lowercase}
+@item Lt @tab @code{letter:titlecase}
+@item Lm @tab @code{letter:modifier}
+@item Lo @tab @code{letter:other}
+@item Mn @tab @code{mark:nonspacing}
+@item Mc @tab @code{mark:spacing-combining}
+@item Me @tab @code{mark:enclosing}
+@item Nd @tab @code{number:decimal-digit}
+@item Nl @tab @code{number:letter}
+@item No @tab @code{number:other}
+@item Pc @tab @code{punctuation:connector}
+@item Pd @tab @code{punctuation:dash}
+@item Ps @tab @code{punctuation:open}
+@item Pe @tab @code{punctuation:close}
+@item Pi @tab @code{punctuation:initial-quote}
+@item Pf @tab @code{punctuation:final-quote}
+@item Po @tab @code{punctuation:other}
+@item Sm @tab @code{symbol:math}
+@item Sc @tab @code{symbol:currency}
+@item Sk @tab @code{symbol:modifier}
+@item So @tab @code{symbol:other}
+@item Zs @tab @code{separator:space}
+@item Zl @tab @code{separator:line}
+@item Zp @tab @code{separator:paragraph}
+@item Cc @tab @code{other:control}
+@item Cf @tab @code{other:format}
+@item Cs @tab @code{other:surrogate}
+@item Co @tab @code{other:private-use}
+@item Cn @tab @code{other:not-assigned}
+@end multitable
+@end deffn
+
+@node Character Sets,  , Unicode, Characters
+@section Character Sets
+@cindex character set
+@cindex set, of characters
+
+MIT/GNU Scheme's character-set abstraction is used to represent groups
+of characters, such as the letters or digits.  A character set may
+contain any character.  Alternatively, a character set can be treated
+as a set of code points.
+
+Implementation note: MIT/GNU Scheme allows any ``bitless'' character
+to be stored in a character set; operations that accept characters
+automatically strip their bucky bits.
+
+@deffn procedure char-set? object
+@cindex type predicate, for character set
+Returns @code{#t} if @var{object} is a character set, otherwise it
+returns @code{#f}.
+@end deffn
+
+@deffn procedure char-in-set? char char-set
+Returns @code{#t} if @var{char} is in @var{char-set}, otherwise it
+returns @code{#f}.
+@end deffn
+
+@deffn procedure code-point-in-set? code-point char-set
+Returns @code{#t} if @var{code-point} is in @var{char-set}, otherwise
+it returns @code{#f}.
+@end deffn
+
+@deffn procedure char-set-predicate char-set
+Returns a procedure of one argument that returns @code{#t} if its
+argument is a character in @var{char-set}, otherwise it returns
+@code{#f}.
+@end deffn
+
+@deffn procedure compute-char-set predicate
+Calls @var{predicate} once on each Unicode code point, and returns a
+character set containing exactly the code points for which
+@var{predicate} returns a true value.
+@end deffn
+
+@cindex code-point list
+@cindex code-point range
+@cindex code-point range
+The next procedures represent a character set as a @dfn{code-point
+list}, which is a list of @dfn{code-point range} elements.  A
+code-point range is either a Unicode code point, or a pair
+@code{(@var{start} . @var{end})} that specifies a contiguous range of
+code points.  Both @var{start} and @var{end} must be exact nonnegative
+integers less than or equal to @code{#x110000}, and @var{start} must
+be less than or equal to @var{end}.  The range specifies all of the
+code points greater than or equal to @var{start} and strictly less
+than @var{end}.
+
+@deffn procedure char-set element @dots{}
+@deffnx procedure char-set* elements
+Returns a new character set consisting of the characters specified by
+@var{element}s.  The procedure @code{char-set} takes these elements as
+multiple arguments, while @code{char-set*} takes them as a single
+list-valued argument; in all other respects these procedures are
+identical.
+
+An @var{element} can take several forms, each of which specifies one
+or more characters to include in the resulting character set: a
+character includes itself; a string includes all of the characters it
+contains; a character set includes its members; or a code-point range
+includes the corresponding characters.
+
+In addition, an @var{element} may be a symbol from the following
+table, which represents the characters as shown:
+@multitable @columnfractions .2 .8
+@headitem Name @tab Unicode character specification
+@item @code{alphabetic} @tab Alphabetic = True
+@item @code{alphanumeric} @tab Alphabetic = True | Numeric_Type = Decimal
+@item @code{cased} @tab Cased = True
+@item @code{lower-case} @tab Lowercase = True
+@item @code{numeric} @tab Numeric_Type = Decimal
+@item @code{unicode} @tab General_Category != (Cs | Cn)
+@item @code{upper-case} @tab Uppercase = True
+@item @code{whitespace} @tab White_Space = True
+@end multitable
+@end deffn
+
+@deffn procedure char-set->code-points char-set
+Returns a code-point list specifying the contents of @var{char-set}.
+The returned list consists of numerically sorted, disjoint, and
+non-abutting code-point ranges.
+@end deffn
+
+@deffn {procedure} char-set=? char-set-1 char-set-2
+Returns @code{#t} if @var{char-set-1} and @var{char-set-2} contain
+exactly the same characters, otherwise it returns @code{#f}.
+@end deffn
+
+@deffn procedure char-set-invert char-set
+Returns a character set that's the inverse of @var{char-set}.  That
+is, the returned character set contains exactly those characters that
+aren't in @var{char-set}.
+@end deffn
+
+@deffn procedure char-set-union char-set @dots{}
+@deffnx procedure char-set-intersection char-set @dots{}
+@deffnx procedure char-set-difference char-set-1 char-set @dots{}
+These procedures compute the respective set union, set intersection,
+and set difference of their arguments.
+@end deffn
+
+@deffn procedure char-set-union* char-sets
+@deffnx procedure char-set-intersection* char-sets
+These procedures correspond to @code{char-set-union} and
+@code{char-set-intersection} but take a single argument that's a list
+of character sets rather than multiple character-set arguments.
+@end deffn
+
+@defvr constant char-set:alphabetic
+@defvrx constant char-set:numeric
+@defvrx constant char-set:whitespace
+@defvrx constant char-set:upper-case
+@defvrx constant char-set:lower-case
+@defvrx constant char-set:alphanumeric
+These constants are the character sets corresponding to
+@code{char-alphabetic?}, @code{char-numeric?},
+@code{char-whitespace?}, @code{char-upper-case?},
+@code{char-lower-case?}, and @code{char-alphanumeric?} respectively.
+@end defvr
+
+@deffn procedure 8-bit-char-set? char-set
+Returns @code{#t} if @var{char-set} contains only 8-bit code points
+(i.e.@. @acronym{ISO} 8859-1 characters), otherwise it returns
+@code{#f}.
+@end deffn
