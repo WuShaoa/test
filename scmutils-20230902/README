@@ -1,0 +1,13 @@
+;;;; This directory structure contains the Scheme mathematical library.
+;;;     This code was developed for educational and research use
+;;;          at the Massachusetts Institute of Technology.
+
+;;;  Contributors to this library include:
+;;;
+;;;        GJS, HAL, CPH, SIEBERT, MH, JINX, PAS, 
+;;;        KGK, KKYLIN, TIMC, WISDOM, ZURAS, HARDY,
+;;;        FARR, AXCH, KEITHW, CAMPBELL, RFRANKEL, 
+;;;        SamRitchie, KCLISP
+
+;;;  Please direct comments, criticisms, and suggestions to 
+;;;                 Gerald Jay Sussman -- gjs@mit.edu

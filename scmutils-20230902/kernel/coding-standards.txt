@@ -1,0 +1,272 @@
+		    Coding standards for Scmutils
+
+Objects in Scmutils are typed.  Usually the type is noted by an
+explicit tag that heads the data.  Scheme built-in numbers and
+booleans are not tagged.  Also, scheme vectors are interpreted as
+column vectors, for matrix operations.
+
+Generic operators for typed data have names prefixed by "g:" as in:
+
+      g:+, g:*, g:/, g:-
+
+These are defined in the scmutils-base-environment, and all
+descendents of that environment.  The generic procedures may have
+n-ary extensions, where appropriate.
+
+Important numerical constants, such as PI have names such as
+
+      :pi, :pi/2, :c
+
+There is a generic dispatch to procedures that implement the specific
+operations on typed data.  The dispatch calls the type-specific
+procedures, named by the convention "type:" as in 
+
+     matrix:+, matrix:-, matrix:*
+
+It is the responsibility of the type-specific operators to strip the
+types, do the required operation, and type the results.
+
+
+
+		       The generic environment
+
+There is a special generic-environment where all of the conventional
+names such as
+
+      +,   *,   /,   - 
+
+are bound to the corresponding generic operators.  In all other
+environments these are bound to the Scheme built-in operations.
+
+One can determine the environment of interaction by examining the
+value of the global variable *environment*.  In Scmutils it will have
+the value GENERIC-ENVIRONMENT when in the generic environment or 
+SCMUTILS-BASE-ENVIRONMENT when in the Scmutils base environment.
+One may change the environment of interaction by invoking the GE (go
+to environment) procedure:
+
+      (ge generic-environment)
+      (ge scmutils-base-environment)
+      (ge user-initial-environment)   ; goes to unaugmented Scheme
+
+
+Numerical Constants
+
+We provide a number of useful numerical
+constants, such as fractions of $\pi$, the *machine-epsilon*, various
+logarithms, etc.   
+
+
+Here are a few examples (the machine is an IBM ThinkPad 760C):
+
+:zero
+;Value: 0
+
+*machine-epsilon*
+;Value: 2.220446049250313e-16
+
+
+*sqrt-machine-epsilon*
+;Value: 1.4901161193847656e-8
+
+(log2 2)
+;Value: 1.
+
+
+(log2 16)
+;Value: 4.
+
+:ln2
+;Value: .6931471805599453
+
+
+It also defines the principal value generically and for the two
+standard trigonometric situations  $[-\pi, \pi)$ and $[0, 2\pi)$, as
+well as the square, cube and the hyperbolic functions, which are not
+standard scheme objects. 
+
+A number of other useful  definitions are
+
+for-all, tests whether a predicate is true for all members of a list;
+exists, tests whether at least one member of a list satisfies a predicate;
+&or, exclusive or test;
+*or, inclusiv or test;  (or do I read them backwards).
+&and, exclusive and;
+*and, incvlusive and;
+do-up, applies a procedure exclusively in ascending order to a list;
+do-low, applies a procedure exclusively in descending order to a list . 
+
+A number of set-theoretic utilities are defined, such as:
+
+list-adjoin, adjoins an element to a list, 
+list-union, produces a list which is the set-theoretic union, 
+list-intersection, produces a list which is the intersection of two lists, 
+list-difference, produces a list which is the set-difference of two lists, 
+remove-duplicates, removes duplicate elements, 
+subset?, tests whether a set is a subset of another, 
+same-set? tests whether two lists are the same as sets. 
+
+The file iterat.scm  contains a variety of structure iterators, in
+particular for 2-dimensional arrays.
+
+Generic operator dispatch is implemented by a two-level table.  The
+operators are represented by atomic symbols, so an ASSQ alist
+structure is appropriate.  This may be optimized by a hash table if
+necessary.  The next level is implemented by a discrimination list,
+where the arguments passed to the operator are examined by predicates
+that are supplied at the point of attachment of a handler (by
+ASSIGN-OPERATION).
+
+*the-operator-table*
+
+generic-apply operator
+
+lookup-operation 
+	      
+error: "Generic operator inapplicable"
+error: "Unknown generic operator"
+
+;;; ASSP chases a thing down a discrimination list (a dlist).
+;;;  A discrimination list is like an alist except that the 
+;;;  key slots have predicate procedures that are applied
+;;;  to the thing.  ASSP either returns the whole
+;;;  first entry whose predicate is satisfied, or #f if none
+;;;  is satisfied.
+
+assp 
+;;; To make an entry in the table we must extend the table in two
+;;;  ways:  We need to add the operator, if necessary, and we need to
+;;;  add the argument-predicate.
+
+enter-operation  
+
+;;; Commonly, a predicate is supplied for each argument.  
+;;; They must be tensor-conjoined. 
+
+assign-operation
+tensor-conjoin predicates
+
+
+All the primitive generic operators are prefixed by g: and are
+made by applying the procedure generic-apply to a name and one or more
+variables, such as:
+ 
+(define (g:arity x) (generic-apply 'arity x))
+
+
+Here is a complete list:
+
+Unary Operators are not further labeled: 
+
+g:type
+g:type-predicate
+g:arity
+g:inexact?
+g:zero?
+g:one?
+g:identity?
+g:negate
+g:invert
+g:sqrt
+g:exp
+g:log
+g:sin
+g:cos
+g:asin
+g:acos
+g:sinh
+g:cosh
+g:abs 
+g:derivative
+
+Binary Operators labeled by :bin, take two arguments, except for expt
+which only works for two arguments:
+
+g:=:bin 
+g:+:bin 
+g:-:bin 
+g:*:bin
+g:/:bin 
+g:expt,    raises the first argument to the power of the second (if possible)
+g:gcd:bin
+
+
+Generic operators dealing with complex quantities some take two
+arguments, and some take one:
+
+g:make-rectangular 
+
+g:make-polar
+
+g:real-part 
+g:imag-part
+g:magnitude
+g:angle
+
+g:conjugate
+
+Operators which take a vaiable number of arguments:
+;;; needs more explanation ;;;
+g:atan . args)
+  (let ((n (length args)))
+    (cond ((fix:= n 1) (generic-apply 'atan1 (car args)))
+	  ((fix:= n 2) (generic-apply 'atan2 (car args) (cadr args)))
+	  (else (error "Wrong number of args -- G:ATAN" args)))))
+
+g:partial-derivative f . varspecs)
+  (generic-apply 'partial-derivative f varspecs))
+
+g:apply f . apply-args)
+  collapse l)
+    (if (null? (cdr l))
+	(car l)
+	(cons (car l)
+	      (collapse (cdr l)))))
+  (if (null? apply-args)
+      (error "No argument list for G:APPLY")
+      (generic-apply 'apply f (collapse apply-args))))
+
+(assign-operation 'apply  apply  procedure? any?)
+
+
+N-ary Operator extensions
+
+g:=  is redefined with a dot-operation to be g:=:n 
+
+g:=:n tests n arguments for equality,
+
+
+g:+ . args =   (g:+:n args))
+where
+g:+:n  ads n arguments
+
+g:* . args =   (g:*:n args)
+where
+g:*:n args
+
+g:- . args =   (g:-:n args)
+
+g:-:n args)
+  (cond ((null? args) zero)
+	((null? (cdr args)) (g:negate (car args)))
+	(else
+	 (g:-:bin (car args)
+		  (g:+:n (cdr args))))))
+
+g:/ . args)
+  (g:/:n args))
+
+g:/:n args)
+  (cond ((null? args) one)
+	((null? (cdr args)) (g:invert (car args)))
+	(else
+	 (g:/:bin (car args)
+		  (g:*:n (cdr args))))))
+
+
+g:gcd . args)
+  (g:gcd:n args))
+
+g:gcd:n args
+
+

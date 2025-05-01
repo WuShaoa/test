@@ -1,0 +1,15 @@
+Before installing scmutils, you must have already installed MIT/GNU
+Scheme version 11.1 or later, and there must be a program
+"mit-scheme" on your path that runs it.  Normally, "mit-scheme" is
+found in "/usr/local/bin", but it may be somewhere else depending on
+where it was installed.
+
+To install scmutils, run the "install.sh" script in this directory.
+It will run "mit-scheme" to find out where to put its binaries, and
+then copy them there.
+
+To uninstall scmutils, run the "uninstall.sh" script in this directory.
+
+For convenience, copy the "mechanics.sh" script to somewhere on your
+path; it will pass the right arguments to mit-scheme for using
+scmutils.  You can rename this script if you like.
