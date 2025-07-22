@@ -1,0 +1,31 @@
+name: "Publish Container Image"
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  publish:
+    runs-on: ubuntu:24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v2.3.5
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to GitHub Package Registry
+        uses: docker/login-action@v1.12.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: ./persistence/dockerfile/mit-scheme-scmutils.dockerfile
+          platforms: linux/amd64,linux/arm64/v8
+          push: true
+          tags: ghcr.io/lomtom/spark-dependencies:1.62.0
