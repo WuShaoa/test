@@ -25,7 +25,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2.7.0
         with:
-          context: ./persistence/dockerfile/mit-scheme-scmutils.dockerfile
-          platforms: linux/amd64,linux/arm64/v8
+          context: .
+          file: ./persistence/dockerfiles/mit-scheme-scmutils.dockerfile
+          platforms: linux/amd64
           push: true
           tags: ghcr.io/lomtom/spark-dependencies:1.62.0
